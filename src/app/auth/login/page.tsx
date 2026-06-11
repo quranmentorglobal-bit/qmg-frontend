@@ -21,9 +21,9 @@ export default function LoginPage() {
     const supabase = createClient()
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) { setError(authError.message); setLoading(false); return }
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
-   if (profile && profile.role === 'teacher') {
-  router.push('/platform/teacher/dashboard')
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single() as any
+    if (profile && profile.role === 'teacher') {
+      router.push('/platform/teacher/dashboard')
     } else {
       router.push('/platform/student/dashboard')
     }
