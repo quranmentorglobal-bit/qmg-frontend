@@ -219,7 +219,7 @@ export default function BookTrialPage() {
   // ── Success screen ──
   if (success) {
     return (
-      <div className="max-w-lg mx-auto text-center py-16">
+      <div className="w-full max-w-lg mx-auto text-center py-16">
         <div className="w-20 h-20 rounded-full bg-[#1B5E37] flex items-center justify-center text-4xl mx-auto mb-6">
           ✅
         </div>
@@ -261,7 +261,7 @@ export default function BookTrialPage() {
   // ─── Main render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
 
       {/* Back */}
       <Link
