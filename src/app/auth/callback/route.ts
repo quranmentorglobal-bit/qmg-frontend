@@ -17,7 +17,7 @@ export async function GET(request: Request) {
           .eq('id', user.id)
           .single()
 
-        if (profile?.role === 'teacher') {
+        if (profile && profile.role === 'teacher') {
           return NextResponse.redirect(`${origin}/platform/teacher/dashboard`)
         }
         return NextResponse.redirect(`${origin}/platform/student/dashboard`)
