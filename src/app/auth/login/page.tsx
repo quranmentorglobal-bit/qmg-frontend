@@ -28,6 +28,21 @@ export default function LoginPage() {
       router.push('/platform/student/dashboard')
     }
   }
+  async function handleGoogleLogin() {
+  setLoading(true)
+  setError('')
+  const supabase = createClient()
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    }
+  })
+  if (error) {
+    setError(error.message)
+    setLoading(false)
+  }
+}
 
   return (
     <>
