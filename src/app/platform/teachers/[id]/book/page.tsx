@@ -206,7 +206,8 @@ export default function BookTrialPage() {
       }] as any)
 
     if (bookingError) {
-      setError('Something went wrong. Please try again.')
+      console.error('Booking error:', bookingError)
+      setError(bookingError.message || 'Something went wrong. Please try again.')
       setSubmitting(false)
       return
     }
