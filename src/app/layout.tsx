@@ -1,10 +1,9 @@
-// src/app/layout.tsx
 import type { Metadata } from 'next'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
   title: 'QuranMentorGlobal — Online Quran Academy',
-  description: 'Learn Quran online with certified teachers. Tajweed, Hifz, Noorani Qaida and more.',
+  description: 'Learn Quran online with certified teachers.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
