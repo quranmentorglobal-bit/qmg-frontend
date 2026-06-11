@@ -145,7 +145,7 @@ export default function TeacherProfilePage() {
         const { data: c } = await supabase
           .from('courses')
           .select('id, title, course_type, description, level, age_group, duration_mins, price_usd, trial_price_usd')
-          .eq('teacher_id', tp.id)
+          .eq('teacher_id', (tp as any).id)
           .eq('is_active', true)
 
         setCourses((c as Course[]) ?? [])
