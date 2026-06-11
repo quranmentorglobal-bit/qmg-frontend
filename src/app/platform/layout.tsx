@@ -195,7 +195,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       </aside>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-64 min-w-0">
+      <div className="flex-1 flex flex-col min-h-screen md:ml-64 w-full md:w-[calc(100%-16rem)] overflow-x-hidden">
 
         {/* Mobile top bar */}
         <header className="md:hidden bg-green-dark px-4 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-30"
@@ -214,7 +214,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full overflow-x-hidden">
           {children}
         </main>
       </div>
