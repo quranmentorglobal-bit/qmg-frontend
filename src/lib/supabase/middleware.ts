@@ -1,14 +1,12 @@
-// src/lib/supabase/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { Database } from '@/types/database'
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> }
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -32,7 +30,6 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Not logged in and trying to access platform → redirect to login
   if (!user && pathname.startsWith('/platform')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
@@ -40,24 +37,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Logged in and on login/signup page → redirect to correct dashboard
   if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     const url = request.nextUrl.clone()
-
-    // Fetch role with a fallback default
-    const { data } = await supabase
+    const { data: row } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    const role = (data as any)?.role ?? 'student'
-
-    if (role === 'teacher') {
-      url.pathname = '/platform/teacher/dashboard'
-    } else {
-      url.pathname = '/platform/student/dashboard'
-    }
+    const role = (row as any)?.role ?? 'student'
+    url.pathname = role === 'teacher'
+      ? '/platform/teacher/dashboard'
+      : '/platform/student/dashboard'
 
     return NextResponse.redirect(url)
   }
