@@ -42,19 +42,19 @@ export async function updateSession(request: NextRequest) {
 
   // Logged in and on login/signup page → redirect to correct dashboard
   if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
-    // Fetch their role to redirect correctly
-    const { data: profile } = await supabase
+    const url = request.nextUrl.clone()
+
+    // Fetch role with a fallback default
+    const { data } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    const url = request.nextUrl.clone()
+    const role = (data as any)?.role ?? 'student'
 
-    if (profile?.role === 'teacher') {
+    if (role === 'teacher') {
       url.pathname = '/platform/teacher/dashboard'
-    } else if (profile?.role === 'admin') {
-      url.pathname = '/platform/student/dashboard' // admins use admin.domain
     } else {
       url.pathname = '/platform/student/dashboard'
     }
