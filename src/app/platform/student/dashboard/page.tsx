@@ -152,56 +152,10 @@ export default function StudentDashboard() {
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
-
-      {/* ── Top Nav ── */}
-      <nav className="bg-[#1B5E37] shadow-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#B8952A] flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-                </svg>
-              </div>
-              <span className="text-white font-bold text-lg tracking-tight hidden sm:block">
-                Quran<span className="text-[#B8952A]">Mentor</span>Global
-              </span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-6 text-sm text-white/80">
-              <Link href="/platform/student/dashboard" className="text-white font-semibold border-b-2 border-[#B8952A] pb-0.5">
-                Dashboard
-              </Link>
-              <Link href="/platform/student/bookings" className="hover:text-white transition-colors">
-                My Bookings
-              </Link>
-              <Link href="/platform/teachers" className="hover:text-white transition-colors">
-                Browse Teachers
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#B8952A] flex items-center justify-center text-white font-bold text-sm">
-                {profile ? getInitials(profile.full_name) : '?'}
-              </div>
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                  router.replace('/auth/login')
-                }}
-                className="text-white/70 hover:text-white text-sm transition-colors hidden sm:block"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div>
 
       {/* ── Main ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full">
 
         {/* Greeting */}
         <div className="mb-8">
