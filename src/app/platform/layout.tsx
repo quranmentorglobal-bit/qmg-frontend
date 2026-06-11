@@ -22,16 +22,15 @@ const teacherNav = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg bg-gold flex items-center justify-center flex-shrink-0">
-        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
-        </svg>
-      </div>
-      <div>
-        <div className="font-display text-base font-bold text-white leading-tight">
-          Quran<span className="text-gold">Mentor</span>Global
-        </div>
+    <div className="flex items-center gap-2">
+      <img
+        src="/logo.png"
+        alt="QuranMentorGlobal"
+        className="w-9 h-9 rounded-lg object-contain bg-white p-0.5 flex-shrink-0"
+      />
+      <div className="font-display text-sm font-bold text-white leading-tight">
+        Quran<span className="text-gold">Mentor</span><br/>
+        <span className="text-[10px] font-normal text-white/60 tracking-widest uppercase">Global</span>
       </div>
     </div>
   )
@@ -140,7 +139,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       </aside>
 
       {/* ── Main ── */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-64 w-0 md:w-auto">
+      <div className="flex-1 flex flex-col min-h-screen md:ml-64 min-w-0">
 
         {/* ── Mobile top bar ── */}
         <header className="md:hidden bg-green-dark px-4 py-3 flex items-center justify-between flex-shrink-0 sticky top-0 z-30">
@@ -159,7 +158,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
         </header>
 
         {/* ── Page content ── */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0">
           {children}
         </main>
       </div>
