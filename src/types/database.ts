@@ -176,3 +176,31 @@ export interface TeacherBookingView {
   course_title:     string
   course_type:      CourseType
 }
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: { Row: Profile }
+      teacher_profiles: { Row: TeacherProfile }
+      courses: { Row: Course }
+      bookings: { Row: Booking }
+      lessons: { Row: Lesson }
+      reviews: { Row: Review }
+      payments: { Row: Payment }
+    }
+    Views: {
+      public_teachers: { Row: PublicTeacher }
+      student_bookings_view: { Row: StudentBookingView }
+      teacher_bookings_view: { Row: TeacherBookingView }
+    }
+    Enums: {
+      user_role: UserRole
+      teacher_status: TeacherStatus
+      booking_status: BookingStatus
+      lesson_status: LessonStatus
+      payment_status: PaymentStatus
+      payment_method: PaymentMethod
+      course_type: CourseType
+    }
+  }
+}
