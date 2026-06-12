@@ -13,12 +13,6 @@ interface NavItem {
   icon: string
 }
 
-type ProfileRow = {
-  role: string
-  first_name: string | null
-  last_name: string | null
-}
-
 const studentNav: NavItem[] = [
   { label: 'Dashboard',       href: '/platform/student/dashboard', icon: '🏠' },
   { label: 'Browse Teachers', href: '/platform/teachers',          icon: '🔍' },
@@ -155,6 +149,26 @@ function BottomTabs({ nav }: { nav: NavItem[] }) {
   )
 }
 
+// Standalone async function OUTSIDE the component — avoids TypeScript
+// inferring 'never' from the Supabase generic chain inside useEffect
+async function fetchProfile(supabase: ReturnType<typeof createClient>, userId: string) {
+  const result = await supabase
+    .from('profiles')
+    .select('role, first_name, last_name')
+    .eq('id', userId)
+    .single()
+
+  if (result.error || !result.data) return null
+
+  const data = result.data as unknown as {
+    role: string
+    first_name: string | null
+    last_name: string | null
+  }
+
+  return data
+}
+
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole]         = useState<UserRole>('student')
   const [userName, setUserName] = useState('')
@@ -167,13 +181,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, first_name, last_name')
-        .eq('id', user.id)
-        .returns<ProfileRow>()
-        .single()
-
+      const profile = await fetchProfile(supabase, user.id)
       if (!profile) { router.push('/auth/login'); return }
 
       setRole((profile.role as UserRole) ?? 'student')
