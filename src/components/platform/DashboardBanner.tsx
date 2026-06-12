@@ -5,22 +5,22 @@
 //
 // IMAGE SETUP — create folder public/banners/ in GitHub and add these files:
 //
-// Size: 1300 × 360 px, saved as .jpg (compress to under 300KB via tinyjpg.com)
+// Size: 1300 × 360 px, saved as .png (compress to under 300KB via tinypng.com)
 //
 // STUDENT:
-//   public/banners/student-1.jpg
-//   public/banners/student-2.jpg
-//   public/banners/student-3.jpg
+//   public/banners/student-1.png
+//   public/banners/student-2.png
+//   public/banners/student-3.png
 //
 // TEACHER:
-//   public/banners/teacher-1.jpg
-//   public/banners/teacher-2.jpg
-//   public/banners/teacher-3.jpg
+//   public/banners/teacher-1.png
+//   public/banners/teacher-2.png
+//   public/banners/teacher-3.png
 //
 // PARENT:
-//   public/banners/parent-1.jpg
-//   public/banners/parent-2.jpg
-//   public/banners/parent-3.jpg
+//   public/banners/parent-1.png
+//   public/banners/parent-2.png
+//   public/banners/parent-3.png
 //
 // ChatGPT prompt template:
 // "Professional wide banner image for an online Quran learning platform.
@@ -41,19 +41,19 @@ interface BannerSlide {
 
 const slides: Record<Role, BannerSlide[]> = {
   student: [
-    { src: '/banners/student-1.jpg', alt: 'Student learning Quran', headline: 'Continue Your Journey', sub: 'Every lesson brings you closer to Allah.' },
-    { src: '/banners/student-2.jpg', alt: 'Quran study environment', headline: 'Deepen Your Understanding', sub: 'Tajweed, Hifz, Tafseer — learn at your pace.' },
-    { src: '/banners/student-3.jpg', alt: 'Live Quran lesson',       headline: 'Your Teacher is Ready',  sub: 'Book your next lesson in seconds.' },
+    { src: '/banners/student-1.png', alt: 'Student learning Quran', headline: 'Continue Your Journey', sub: 'Every lesson brings you closer to Allah.' },
+    { src: '/banners/student-2.png', alt: 'Quran study environment', headline: 'Deepen Your Understanding', sub: 'Tajweed, Hifz, Tafseer — learn at your pace.' },
+    { src: '/banners/student-3.png', alt: 'Live Quran lesson',       headline: 'Your Teacher is Ready',  sub: 'Book your next lesson in seconds.' },
   ],
   teacher: [
-    { src: '/banners/teacher-1.jpg', alt: 'Quran teacher at desk',      headline: 'Welcome Back, Teacher', sub: 'Your students are waiting for your guidance.' },
-    { src: '/banners/teacher-2.jpg', alt: 'Arabic calligraphy teacher', headline: 'Share Your Knowledge',  sub: 'Earn while teaching the words of Allah.' },
-    { src: '/banners/teacher-3.jpg', alt: 'Teacher recording lesson',   headline: 'Grow Your Students',   sub: 'Complete verification to go live on the platform.' },
+    { src: '/banners/teacher-1.png', alt: 'Quran teacher at desk',      headline: 'Welcome Back, Teacher', sub: 'Your students are waiting for your guidance.' },
+    { src: '/banners/teacher-2.png', alt: 'Arabic calligraphy teacher', headline: 'Share Your Knowledge',  sub: 'Earn while teaching the words of Allah.' },
+    { src: '/banners/teacher-3.png', alt: 'Teacher recording lesson',   headline: 'Grow Your Students',   sub: 'Complete verification to go live on the platform.' },
   ],
   parent: [
-    { src: '/banners/parent-1.jpg', alt: 'Parent and child with Quran',        headline: 'Nurture Their Journey', sub: "Track your child's progress every step of the way." },
-    { src: '/banners/parent-2.jpg', alt: 'Mother watching online lesson',      headline: 'Learning, Supervised',  sub: 'Safe, certified teachers for your children.' },
-    { src: '/banners/parent-3.jpg', alt: 'Family with Quran',                  headline: 'A Gift for Life',       sub: 'Give your child the Quran — the greatest inheritance.' },
+    { src: '/banners/parent-1.png', alt: 'Parent and child with Quran',        headline: 'Nurture Their Journey', sub: "Track your child's progress every step of the way." },
+    { src: '/banners/parent-2.png', alt: 'Mother watching online lesson',      headline: 'Learning, Supervised',  sub: 'Safe, certified teachers for your children.' },
+    { src: '/banners/parent-3.png', alt: 'Family with Quran',                  headline: 'A Gift for Life',       sub: 'Give your child the Quran — the greatest inheritance.' },
   ],
 }
 
