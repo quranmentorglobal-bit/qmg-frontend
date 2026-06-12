@@ -123,3 +123,56 @@ export interface Payment {
   created_at:          string
   updated_at:          string
 }
+
+export interface PublicTeacher {
+  id:                string
+  first_name:        string
+  last_name:         string
+  avatar_url:        string | null
+  country:           string | null
+  bio:               string | null
+  years_experience:  number
+  specializations:   CourseType[]
+  teaching_languages: string[]
+  available_days:    string[]
+  hourly_rate_usd:   number
+  trial_rate_usd:    number
+  ijazah_verified:   boolean
+  avg_rating:        number | null
+  total_reviews:     number
+  total_lessons:     number
+}
+
+export interface StudentBookingView {
+  id:               string
+  status:           BookingStatus
+  start_date:       string
+  session_time:     string
+  recurrence:       string
+  price_usd:        number
+  is_trial:         boolean
+  created_at:       string
+  duration_mins:    number
+  teacher_id:       string
+  teacher_name:     string
+  teacher_avatar:   string | null
+  course_title:     string
+  course_type:      CourseType
+}
+
+export interface TeacherBookingView {
+  id:               string
+  status:           BookingStatus
+  start_date:       string
+  session_time:     string
+  recurrence:       string
+  price_usd:        number
+  is_trial:         boolean
+  created_at:       string
+  duration_mins:    number
+  student_id:       string
+  student_name:     string
+  student_avatar:   string | null
+  course_title:     string
+  course_type:      CourseType
+}
