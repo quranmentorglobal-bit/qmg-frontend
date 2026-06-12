@@ -152,21 +152,15 @@ function BottomTabs({ nav }: { nav: NavItem[] }) {
 // Standalone async function OUTSIDE the component — avoids TypeScript
 // inferring 'never' from the Supabase generic chain inside useEffect
 async function fetchProfile(supabase: ReturnType<typeof createClient>, userId: string) {
-  const result = await supabase
+  const { data, error } = await (supabase as any)
     .from('profiles')
     .select('role, first_name, last_name')
     .eq('id', userId)
     .single()
 
-  if (result.error || !result.data) return null
+  if (error || !data) return null
 
-  const data = result.data as unknown as {
-    role: string
-    first_name: string | null
-    last_name: string | null
-  }
-
-  return data
+  return data as { role: string; first_name: string | null; last_name: string | null }
 }
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
