@@ -86,8 +86,8 @@ function newApplicationEmail(teacherName: string, teacherEmail: string, speciali
       </table>
     </div>
 
-    <a href="${APP_URL.replace('app.', 'admin.')}/teachers/pending"
-      style="display:block;background:linear-gradient(135deg,#1B5E37,#0D3D20);color:#fff;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:700;font-size:14px;text-align:center;">
+href=\"${process.env.NEXT_PUBLIC_ADMIN_URL || 'https://admin.quranmentorglobal.com'}/teachers/pending\"
+style="display:block;background:linear-gradient(135deg,#1B5E37,#0D3D20);color:#fff;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:700;font-size:14px;text-align:center;">
       Review Application in Admin Panel →
     </a>
   `)
