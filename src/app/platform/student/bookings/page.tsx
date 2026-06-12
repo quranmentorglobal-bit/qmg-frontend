@@ -7,8 +7,12 @@ import Link from 'next/link'
 import type { CourseType } from '@/types/database'
 
 const COURSE_ICONS: Record<CourseType, string> = {
-  noorani_qaida: '🔤', tajweed: '🎵', hifz: '📖',
-  tafseer: '🌙', islamic_studies: '☪️', ijazah: '🏅',
+  'Noorani Qaida': '🔤',
+  'Tajweed': '🎵',
+  'Hifz': '📖',
+  'Tafseer': '🌙',
+  'Islamic Studies': '☪️',
+  'Ijazah': '🏅',
 }
 
 function statusStyle(status: string) {
