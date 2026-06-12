@@ -113,7 +113,7 @@ export default function SignupPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0D3D20' }}>
           <div style={{ background: '#fff', borderRadius: 20, padding: 48, textAlign: 'center', maxWidth: 420, margin: 20 }}>
             <div style={{ fontSize: 56, marginBottom: 20 }}>
-              {validRole === 'teacher' ? '🎓' : '📧'}
+              {role === 'teacher' ? '🎓' : '📧'}
             </div>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 800, color: '#0D3D20', marginBottom: 12 }}>
               {role === 'teacher' ? 'Welcome, Teacher!' : 'Check Your Email!'}
