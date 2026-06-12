@@ -62,11 +62,12 @@ export default function ParentBillingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/auth/login'; return }
 
-      const { data: profile } = await supabase
+      const { data: profileData } = await (supabase as any)
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
+      const profile = profileData as { role: string } | null
       if (profile?.role !== 'parent') { window.location.href = '/auth/login'; return }
 
       // Children IDs
