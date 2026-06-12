@@ -35,12 +35,12 @@ type Course = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const COURSE_ICONS: Record<CourseType, string> = {
-  noorani_qaida:   '🔤',
-  tajweed:         '🎵',
-  hifz:            '📖',
-  tafseer:         '🌙',
-  islamic_studies: '☪️',
-  ijazah:          '🏅',
+  'Noorani Qaida':   '🔤',
+  'Tajweed':         '🎵',
+  'Hifz':            '📖',
+  'Tafseer':         '🌙',
+  'Islamic Studies': '☪️',
+  'Ijazah':          '🏅',
 }
 
 const TIME_SLOTS = [
