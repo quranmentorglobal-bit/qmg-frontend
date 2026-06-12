@@ -172,7 +172,7 @@ export default function VerificationPage() {
     }
 
     // Update profiles table
-    const { error: profileError } = await supabase.from('profiles').update({
+    const { error: profileError } = await (supabase.from('profiles') as any).update({
       first_name: firstName,
       last_name: lastName,
       gender,
@@ -189,7 +189,7 @@ export default function VerificationPage() {
     }
 
     // Upsert teacher_profiles by user_id — works whether row exists or not
-    const { error: tpError } = await supabase.from('teacher_profiles').upsert({
+    const { error: tpError } = await (supabase.from('teacher_profiles') as any).upsert({
       user_id: user.id,
       status: 'pending',
       submitted_at: new Date().toISOString(),
