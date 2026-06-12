@@ -55,21 +55,21 @@ type Review = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const COURSE_LABELS: Record<CourseType, string> = {
-  noorani_qaida:   'Noorani Qaida',
-  tajweed:         'Tajweed',
-  hifz:            'Hifz',
-  tafseer:         'Tafseer',
-  islamic_studies: 'Islamic Studies',
-  ijazah:          'Ijazah',
+  'Noorani Qaida':   'Noorani Qaida',
+  'Tajweed':         'Tajweed',
+  'Hifz':            'Hifz',
+  'Tafseer':         'Tafseer',
+  'Islamic Studies': 'Islamic Studies',
+  'Ijazah':          'Ijazah',
 }
 
 const COURSE_ICONS: Record<CourseType, string> = {
-  noorani_qaida:   '🔤',
-  tajweed:         '🎵',
-  hifz:            '📖',
-  tafseer:         '🌙',
-  islamic_studies: '☪️',
-  ijazah:          '🏅',
+  'Noorani Qaida':   '🔤',
+  'Tajweed':         '🎵',
+  'Hifz':            '📖',
+  'Tafseer':         '🌙',
+  'Islamic Studies': '☪️',
+  'Ijazah':          '🏅',
 }
 
 const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
