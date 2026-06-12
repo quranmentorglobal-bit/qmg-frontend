@@ -6,20 +6,28 @@ import { useRouter } from 'next/navigation'
 import type { CourseType } from '@/types/database'
 
 const COURSE_LABELS: Record<CourseType, string> = {
-  noorani_qaida: 'Noorani Qaida', tajweed: 'Tajweed', hifz: 'Hifz',
-  tafseer: 'Tafseer', islamic_studies: 'Islamic Studies', ijazah: 'Ijazah',
+  'Noorani Qaida': 'Noorani Qaida',
+  'Tajweed': 'Tajweed',
+  'Hifz': 'Hifz',
+  'Tafseer': 'Tafseer',
+  'Islamic Studies': 'Islamic Studies',
+  'Ijazah': 'Ijazah',
 }
 const COURSE_ICONS: Record<CourseType, string> = {
-  noorani_qaida: '🔤', tajweed: '🎵', hifz: '📖',
-  tafseer: '🌙', islamic_studies: '☪️', ijazah: '🏅',
+  'Noorani Qaida': '🔤',
+  'Tajweed': '🎵',
+  'Hifz': '📖',
+  'Tafseer': '🌙',
+  'Islamic Studies': '☪️',
+  'Ijazah': '🏅',
 }
-const COURSE_TYPES: CourseType[] = ['noorani_qaida', 'tajweed', 'hifz', 'tafseer', 'islamic_studies', 'ijazah']
+const COURSE_TYPES: CourseType[] = ['Noorani Qaida', 'Tajweed', 'Hifz', 'Tafseer', 'Islamic Studies', 'Ijazah']
 
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-[#E8E4DA] ${className}`} />
 }
 
-const EMPTY_FORM = { title: '', course_type: 'tajweed' as CourseType, description: '', level: 'Beginner', age_group: 'All ages', duration_mins: 60, price_usd: 15, trial_price_usd: 5 }
+const EMPTY_FORM = { title: '', course_type: 'Tajweed' as CourseType, description: '', level: 'Beginner', age_group: 'All ages', duration_mins: 60, price_usd: 15, trial_price_usd: 5 }
 
 export default function TeacherCourses() {
   const supabase = createClient()
@@ -100,7 +108,6 @@ export default function TeacherCourses() {
         </button>
       </div>
 
-      {/* Add course form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-[#D4C99A] p-6 mb-6 shadow-sm">
           <h2 className="font-bold text-[#0D3D20] mb-4">New Course</h2>
@@ -160,7 +167,6 @@ export default function TeacherCourses() {
         </div>
       )}
 
-      {/* Courses list */}
       <div className="space-y-4">
         {loading ? [1,2].map(i => <Skeleton key={i} className="h-24 w-full" />) :
          courses.length === 0 ? (
