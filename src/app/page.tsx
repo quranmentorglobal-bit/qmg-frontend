@@ -228,7 +228,7 @@ export default function LandingPage() {
 
         /* ── Features ── */
         .features{padding:100px 0;background:var(--cream)}
-        .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:44px}
+        .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:44px;align-items:stretch}
         .fc{background:#fff;border-radius:var(--rl);overflow:hidden;border:1px solid transparent;transition:all .4s var(--ease);position:relative;display:flex;flex-direction:column}
         .fc:hover{box-shadow:0 20px 56px rgba(0,0,0,.12);transform:translateY(-8px);border-color:var(--gold-pale)}
         .fc-img{height:185px;overflow:hidden;background:var(--cream-d);flex-shrink:0}
@@ -385,9 +385,9 @@ export default function LandingPage() {
         #stbtn:hover{transform:translateY(-4px) scale(1.05)}
 
         /* ── Responsive ── */
-        @media(max-width:1024px){.fgrid{grid-template-columns:1fr 1fr;gap:32px}.cgrid{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}.tsgrid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:1024px){.fgrid{grid-template-columns:1fr 1fr;gap:32px}.feat-grid{grid-template-columns:repeat(2,1fr)}.cgrid{grid-template-columns:repeat(2,1fr)}.tgrid{grid-template-columns:repeat(2,1fr)}.tsgrid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:900px){.nav-links,.nav-cta{display:none}.ham{display:flex}.about-inner,.how-inner,.contact-inner{grid-template-columns:1fr;gap:48px}}
-        @media(max-width:768px){.nav-links,.nav-cta{display:none!important}.ham{display:flex!important}.hero-inner{padding:80px 0 60px}.hero-stats{gap:20px}.fgrid{grid-template-columns:1fr;gap:24px}.cgrid{grid-template-columns:1fr}.tgrid{grid-template-columns:1fr 1fr}.tsgrid{grid-template-columns:1fr}.sgrid{grid-template-columns:repeat(2,1fr);gap:20px}.ctab-inner{grid-template-columns:1fr!important;text-align:center;padding:40px 24px}.ctab-btns{flex-direction:row;justify-content:center;flex-wrap:wrap}.section-hd{margin-bottom:40px}.features,.about,.courses,.how,.teachers-sec,.testi,.stats-sec,.ctab,.contact-sec{padding:64px 0}.cform{padding:28px 20px}.fg-row{grid-template-columns:1fr}.ayah-en{display:none}.footer-ayah{flex-direction:column;gap:8px}}
+        @media(max-width:768px){.nav-links,.nav-cta{display:none!important}.ham{display:flex!important}.hero-inner{padding:80px 0 60px}.hero-stats{gap:20px}.fgrid{grid-template-columns:1fr;gap:24px}.cgrid{grid-template-columns:1fr}.tgrid{grid-template-columns:1fr 1fr}.tsgrid{grid-template-columns:1fr}.sgrid{grid-template-columns:repeat(2,1fr);gap:20px}.ctab-inner{grid-template-columns:1fr!important;text-align:center;padding:40px 24px}.ctab-btns{flex-direction:row;justify-content:center;flex-wrap:wrap}.section-hd{margin-bottom:40px}.feat-grid{grid-template-columns:1fr}.features,.about,.courses,.how,.teachers-sec,.testi,.stats-sec,.ctab,.contact-sec{padding:64px 0}.cform{padding:28px 20px}.fg-row{grid-template-columns:1fr}.ayah-en{display:none}.footer-ayah{flex-direction:column;gap:8px}}
         @media(max-width:480px){.hero-btns{flex-direction:column;align-items:flex-start}.hero-btns .btn{width:100%;justify-content:center}.tgrid{grid-template-columns:1fr}.ctab-inner{padding:32px 20px}.ctab-btns .btn{width:100%;justify-content:center}}
       `}</style>
 
@@ -511,7 +511,7 @@ export default function LandingPage() {
             <h2 className="st">Everything You Need to <span>Learn Quran Online</span></h2>
             <p className="ss">We built Quran Mentor Global to make authentic Quran education accessible to every Muslim — with the quality of a local scholar, from anywhere in the world.</p>
           </div>
-          <div className="fgrid">
+          <div className="feat-grid">
             {[
               { img:'/images/features/expert-teachers.png',   ico:'🎓', title:'Expert Teachers',    desc:'Learn from qualified Qaris with verified Ijazah certifications and years of teaching experience across all levels.',    link:'/platform/teachers', linkTxt:'Meet Teachers →' },
               { img:'/images/features/live-classes.png',      ico:'🎥', title:'Live 1-to-1 Classes', desc:'Personalized attention in private HD video sessions. No large groups — just you and your dedicated teacher.',            link:'/courses',            linkTxt:'View Courses →' },
