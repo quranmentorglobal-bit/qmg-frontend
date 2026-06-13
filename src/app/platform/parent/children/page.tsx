@@ -199,7 +199,7 @@ export default function ParentDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F5F0E8]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="">
 
         {/* Header */}
         <div className="mb-8">
