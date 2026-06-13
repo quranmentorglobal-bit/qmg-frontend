@@ -52,7 +52,7 @@ export default function ContactPage() {
         .contact-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
         .ccard{background:var(--cream);border-radius:14px;padding:20px;border:1.5px solid var(--cream-d);transition:all .3s;text-decoration:none;display:block}
         .ccard:hover{background:#fff;border-color:var(--green);box-shadow:0 8px 28px rgba(27,94,55,.12);transform:translateY(-4px)}
-        .ccard-ico{font-size:28px;margin-bottom:10px;transition:transform .3s}
+        .ccard-ico{width:40px;height:40px;margin-bottom:10px;transition:transform .3s;display:flex;align-items:center;justify-content:center}
         .ccard:hover .ccard-ico{transform:scale(1.15) rotate(-5deg)}
         .ccard h4{font-size:14px;font-weight:700;color:var(--green-dark);margin-bottom:4px}
         .ccard p{font-size:13px;color:var(--tl);line-height:1.5}
@@ -98,6 +98,8 @@ export default function ContactPage() {
         .htrust:hover{background:rgba(255,255,255,.2);border-color:#fff}
 
         .page-hero{background-color:var(--green-dark)}
+        .page-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:-1; display:block; }
+
         #stbtn{position:fixed;bottom:28px;right:28px;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-mid));color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;transition:all .4s;box-shadow:0 4px 20px rgba(27,94,55,.4)}
         #stbtn:hover{transform:translateY(-4px) scale(1.05)}
 
@@ -137,31 +139,43 @@ export default function ContactPage() {
               </div>
 
               <div className="contact-cards">
-                {[
-                  { href:'mailto:info@quranmentorglobal.com', ico:'📧', title:'Email Us',    desc:'info@quranmentorglobal.com' },
-                  { href:'https://wa.me/message/QuranMentorGlobal', ico:'💬', title:'WhatsApp',   desc:'Available 24/7' },
-                  { href:'https://instagram.com/QuranMentorGlobal', ico:'📸', title:'Instagram',  desc:'@QuranMentorGlobal' },
-                  { href:'https://facebook.com/QuranMentorGlobal',  ico:'👥', title:'Facebook',   desc:'QuranMentorGlobal' },
-                ].map((c,i) => (
-                  <a key={i} href={c.href} target={c.href.startsWith('mailto') ? undefined : '_blank'} rel="noopener noreferrer" className="ccard">
-                    <div className="ccard-ico">{c.ico}</div>
-                    <h4>{c.title}</h4>
-                    <p>{c.desc}</p>
-                    <span className="ccard-arrow">→</span>
-                  </a>
-                ))}
+                <a href="mailto:info@quranmentorglobal.com" className="ccard">
+                  <div className="ccard-ico">
+                    <img src="https://cdn.simpleicons.org/gmail/EA4335" alt="Email" width="28" height="28" />
+                  </div>
+                  <h4>Email Us</h4>
+                  <p>info@quranmentorglobal.com</p>
+                  <span className="ccard-arrow">→</span>
+                </a>
+                <a href="https://wa.me/message/QuranMentorGlobal" target="_blank" rel="noopener noreferrer" className="ccard">
+                  <div className="ccard-ico">
+                    <img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp" width="28" height="28" />
+                  </div>
+                  <h4>WhatsApp</h4>
+                  <p>Available 24/7</p>
+                  <span className="ccard-arrow">→</span>
+                </a>
+                <a href="https://instagram.com/QuranMentorGlobal" target="_blank" rel="noopener noreferrer" className="ccard">
+                  <div className="ccard-ico">
+                    <img src="https://cdn.simpleicons.org/instagram/E4405F" alt="Instagram" width="28" height="28" />
+                  </div>
+                  <h4>Instagram</h4>
+                  <p>@QuranMentorGlobal</p>
+                  <span className="ccard-arrow">→</span>
+                </a>
+                <a href="https://facebook.com/QuranMentorGlobal" target="_blank" rel="noopener noreferrer" className="ccard">
+                  <div className="ccard-ico">
+                    <img src="https://cdn.simpleicons.org/facebook/1877F2" alt="Facebook" width="28" height="28" />
+                  </div>
+                  <h4>Facebook</h4>
+                  <p>QuranMentorGlobal</p>
+                  <span className="ccard-arrow">→</span>
+                </a>
               </div>
 
-              <div className="trust-items">
-                {[{n:'10K+',l:'Students enrolled'},{n:'500+',l:'Certified teachers'},{n:'4.9★',l:'Average rating'},{n:'100+',l:'Countries served'}].map((s,i) => (
-                  <div className="ti" key={i}><div className="ti-n">{s.n}</div><div className="ti-l">{s.l}</div></div>
-                ))}
-              </div>
 
-              <div className="map-placeholder">
-                <span style={{fontSize:32}}>🌍</span>
-                <p>Serving students in 100+ countries worldwide</p>
-              </div>
+
+
 
               <SocialIcons />
             </div>
