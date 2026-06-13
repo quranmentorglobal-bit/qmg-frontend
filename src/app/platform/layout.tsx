@@ -298,7 +298,7 @@ function TopBar({ userName, role, pathname }: { userName: string; role: UserRole
             className="font-bold whitespace-nowrap"
             style={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: 20,
+              fontSize: 26,
               color: '#0D3D20',
               letterSpacing: '-0.3px',
             }}
