@@ -89,6 +89,8 @@ export default function TeachersLandingPage() {
         .hero-badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
         .hero-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.9);font-size:13px;font-weight:500;padding:7px 16px;border-radius:50px}
         .page-hero{background-color:var(--green-dark)}
+        .page-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:-1; display:block; }
+
         #stbtn{position:fixed;bottom:28px;right:28px;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-mid));color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;transition:all .4s;box-shadow:0 4px 20px rgba(27,94,55,.4)}
         #stbtn:hover{transform:translateY(-4px) scale(1.05)}
 
