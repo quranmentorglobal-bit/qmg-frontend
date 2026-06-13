@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function formatDateTime(iso: string) {
   const d = new Date(iso)
@@ -19,79 +19,150 @@ function formatDateTime(iso: string) {
 }
 
 function getInitials(name: string) {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    scheduled: 'bg-blue-100 text-blue-700',
-    completed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-red-100 text-red-700',
-    active: 'bg-emerald-100 text-emerald-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-  }
-  return map[status] ?? 'bg-gray-100 text-gray-600'
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
 function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-[#E8E4DA] ${className}`} />
+  return <div className={`animate-pulse rounded-2xl bg-[#E8E4DA] ${className}`} />
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ── KPI Card — identical pattern to teacher dashboard ─────────────────────────
+
+function KpiCard({ label, value, icon, gradient, iconBg, loading }: {
+  label: string
+  value: string | number
+  icon: string
+  gradient: string
+  iconBg: string
+  loading: boolean
+}) {
+  if (loading) return <Skeleton className="h-28" />
+  return (
+    <div
+      className="rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 cursor-default"
+      style={{ background: gradient, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid rgba(255,255,255,0.6)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)' }}
+    >
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3"
+        style={{ background: iconBg, boxShadow: `0 4px 12px ${iconBg}55` }}>
+        {icon}
+      </div>
+      <div>
+        <div className="text-2xl font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+          {value}
+        </div>
+        <div className="text-xs font-medium mt-0.5" style={{ color: '#5A7A6A' }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+
+// ── Quick Action — identical pattern to teacher dashboard ─────────────────────
+
+function QuickAction({ icon, label, href, color }: { icon: string; label: string; href: string; color: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-2 p-4 rounded-2xl text-center transition-all duration-150"
+      style={{ background: '#fff', border: '1px solid rgba(27,94,55,0.08)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 6px rgba(0,0,0,0.04)' }}
+    >
+      <span className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: color }}>
+        {icon}
+      </span>
+      <span className="text-xs font-semibold" style={{ color: '#0D3D20' }}>{label}</span>
+    </Link>
+  )
+}
+
+// ── Empty State ────────────────────────────────────────────────────────────────
+
+function EmptyState({ emoji, title, sub, cta, ctaHref }: {
+  emoji: string; title: string; sub: string; cta?: string; ctaHref?: string
+}) {
+  return (
+    <div className="rounded-2xl p-10 text-center"
+      style={{ background: 'rgba(255,255,255,0.7)', border: '1px dashed rgba(27,94,55,0.15)' }}>
+      <div className="text-4xl mb-3">{emoji}</div>
+      <p className="font-semibold text-sm" style={{ color: '#1B5E37' }}>{title}</p>
+      <p className="text-xs mt-1.5" style={{ color: '#8A9A8A' }}>{sub}</p>
+      {cta && ctaHref && (
+        <Link href={ctaHref}
+          className="inline-block mt-4 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+          style={{ background: '#1B5E37' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0D3D20' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#1B5E37' }}>
+          {cta}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+// ── Status badge ───────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, { bg: string; color: string; label: string }> = {
+    confirmed: { bg: 'rgba(27,94,55,0.1)',    color: '#1B5E37',  label: 'Confirmed' },
+    pending:   { bg: 'rgba(184,149,42,0.12)', color: '#B8952A',  label: 'Pending'   },
+    completed: { bg: 'rgba(34,197,94,0.1)',   color: '#16A34A',  label: 'Completed' },
+    cancelled: { bg: 'rgba(239,68,68,0.1)',   color: '#DC2626',  label: 'Cancelled' },
+    active:    { bg: 'rgba(27,94,55,0.1)',    color: '#1B5E37',  label: 'Active'    },
+  }
+  const s = styles[status] ?? { bg: 'rgba(0,0,0,0.06)', color: '#666', label: status }
+  return (
+    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+      style={{ background: s.bg, color: s.color }}>
+      {s.label.toUpperCase()}
+    </span>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function StudentDashboard() {
   const supabase = createClient()
-  const router = useRouter()
+  const router   = useRouter()
 
-  const [profile, setProfile] = useState<any>(null)
-  const [lessons, setLessons] = useState<any[]>([])
-  const [bookings, setBookings] = useState<any[]>([])
+  const [profile, setProfile]             = useState<any>(null)
+  const [lessons, setLessons]             = useState<any[]>([])
+  const [bookings, setBookings]           = useState<any[]>([])
   const [completedCount, setCompletedCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [greeting, setGreeting] = useState('Good day')
+  const [loading, setLoading]             = useState(true)
 
-  useEffect(() => {
-    const h = new Date().getHours()
-    if (h < 12) setGreeting('Good morning')
-    else if (h < 17) setGreeting('Good afternoon')
-    else setGreeting('Good evening')
-  }, [])
+  const greeting = getGreeting()
 
   useEffect(() => {
     async function load() {
-      // 1. Auth check
       const { data: authData } = await supabase.auth.getUser()
       const user = authData?.user
-      if (!user) {
-        router.replace('/auth/login')
-        return
-      }
+      if (!user) { router.replace('/auth/login'); return }
 
-      // 2. Profile
       const { data: profRaw } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, role')
+        .select('id, full_name, first_name, email, avatar_url, role')
         .eq('id', user.id)
         .single()
 
       const prof = profRaw as any
       if (prof) {
         setProfile(prof)
-        if (prof.role === 'teacher') {
-          router.replace('/platform/teacher/dashboard')
-          return
-        }
+        if (prof.role === 'teacher') { router.replace('/platform/teacher/dashboard'); return }
       }
 
-      // 3. Get student's booking IDs first
       const { data: myBookings } = await supabase
         .from('bookings')
         .select(`
-          id,
-          status,
-          total_lessons,
-          lessons_completed,
-          student_id,
+          id, status, total_lessons, lessons_completed, student_id,
           courses ( title ),
           teacher_profiles (
             hourly_rate,
@@ -103,25 +174,16 @@ export default function StudentDashboard() {
 
       setBookings(myBookings ?? [])
 
-      // 4. Get booking IDs to fetch lessons
       const bookingIds = (myBookings ?? []).map((b: any) => b.id)
 
       if (bookingIds.length > 0) {
-        // Upcoming lessons
         const { data: upcomingLessons } = await supabase
           .from('lessons')
           .select(`
-            id,
-            scheduled_at,
-            duration_minutes,
-            status,
-            meeting_url,
-            booking_id,
+            id, scheduled_at, duration_mins, status, meeting_url, booking_id,
             bookings (
               courses ( title ),
-              teacher_profiles (
-                profiles ( full_name, avatar_url )
-              )
+              teacher_profiles ( profiles ( full_name, avatar_url ) )
             )
           `)
           .in('booking_id', bookingIds)
@@ -132,7 +194,6 @@ export default function StudentDashboard() {
 
         setLessons(upcomingLessons ?? [])
 
-        // Completed count
         const { count } = await supabase
           .from('lessons')
           .select('id', { count: 'exact', head: true })
@@ -144,293 +205,286 @@ export default function StudentDashboard() {
 
       setLoading(false)
     }
-
     load()
   }, [])
 
-  const activeBookings = bookings.filter((b) => b.status === 'active')
+  const activeBookings = bookings.filter(b => b.status === 'confirmed')
+  const firstName = profile?.first_name || profile?.full_name?.split(' ')[0] || 'Student'
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  // ── KPI config ───────────────────────────────────────────────────────────────
+
+  const kpiCards = [
+    {
+      label: 'Lessons Completed',
+      value: completedCount,
+      icon: '✅',
+      gradient: 'linear-gradient(135deg, #E8F5EE 0%, #D4EDDA 100%)',
+      iconBg: 'rgba(27,94,55,0.12)',
+    },
+    {
+      label: 'Upcoming Lessons',
+      value: lessons.length,
+      icon: '📅',
+      gradient: 'linear-gradient(135deg, #FFF8E8 0%, #FDEFC9 100%)',
+      iconBg: 'rgba(184,149,42,0.12)',
+    },
+    {
+      label: 'Active Bookings',
+      value: activeBookings.length,
+      icon: '📖',
+      gradient: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+      iconBg: 'rgba(99,102,241,0.12)',
+    },
+    {
+      label: 'My Teachers',
+      value: bookings.length,
+      icon: '🎓',
+      gradient: 'linear-gradient(135deg, #F5F0FF 0%, #EDE9FE 100%)',
+      iconBg: 'rgba(139,92,246,0.12)',
+    },
+  ]
 
   return (
     <div>
 
-      {/* ── Main ── */}
-      <main className="w-full">
+      {/* Greeting */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#B8952A' }}>
+          {greeting}
+        </p>
+        <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+          {loading ? 'Welcome back' : `Welcome back, ${firstName}`} 👋
+        </h1>
+        <p className="text-sm mt-1" style={{ color: '#6B7A6B' }}>
+          Here&apos;s what&apos;s happening with your learning today.
+        </p>
+      </div>
 
-        {/* Greeting */}
-        <div className="mb-8">
+      {/* Hero Banner */}
+      <DashboardBanner role="student" />
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {kpiCards.map(card => (
+          <KpiCard key={card.label} loading={loading} {...card} />
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <h2 className="text-base font-bold mb-4" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <QuickAction icon="🔍" label="Browse Teachers"  href="/platform/teachers"          color="rgba(27,94,55,0.08)" />
+          <QuickAction icon="📋" label="My Bookings"      href="/platform/student/bookings"   color="rgba(184,149,42,0.10)" />
+          <QuickAction icon="📚" label="My Lessons"       href="/platform/student/lessons"    color="rgba(99,102,241,0.10)" />
+          <QuickAction icon="👤" label="My Profile"       href="/platform/student/profile"    color="rgba(139,92,246,0.10)" />
+        </div>
+      </div>
+
+      {/* Main 2-column grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Upcoming Lessons — 2 cols */}
+        <div className="xl:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+              Upcoming Lessons
+            </h2>
+            <Link href="/platform/student/lessons" className="text-xs font-medium" style={{ color: '#1B5E37' }}>
+              View all →
+            </Link>
+          </div>
+
           {loading ? (
-            <Skeleton className="h-8 w-64 mb-2" />
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24" />)}</div>
+          ) : lessons.length === 0 ? (
+            <EmptyState
+              emoji="📚"
+              title="No upcoming lessons"
+              sub="Book a certified Qari to schedule your first lesson."
+              cta="Browse Teachers"
+              ctaHref="/platform/teachers"
+            />
           ) : (
-            <>
-              <p className="text-[#1B5E37]/60 text-sm font-medium uppercase tracking-wider mb-1">
-                {greeting}
-              </p>
-              <h1 className="text-3xl font-bold text-[#0D3D20]">
-                {profile?.full_name?.split(' ')[0] ?? 'Student'} 👋
-              </h1>
-              <p className="text-[#1B5E37]/70 mt-1 text-sm">
-                Here's what's happening with your learning today.
-              </p>
-            </>
+            <div className="space-y-3">
+              {lessons.map((lesson: any) => {
+                const dt = formatDateTime(lesson.scheduled_at)
+                const teacherName = lesson.bookings?.teacher_profiles?.profiles?.full_name ?? 'Teacher'
+                const courseName  = lesson.bookings?.courses?.title ?? 'Quran Lesson'
+                const avatarUrl   = lesson.bookings?.teacher_profiles?.profiles?.avatar_url
+
+                return (
+                  <div
+                    key={lesson.id}
+                    className="rounded-2xl p-4 flex items-center gap-4 transition-all"
+                    style={{
+                      background: '#fff',
+                      border: dt.isSoon ? '1.5px solid #B8952A' : '1px solid rgba(27,94,55,0.08)',
+                      boxShadow: dt.isSoon ? '0 4px 16px rgba(184,149,42,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = dt.isSoon ? '0 4px 16px rgba(184,149,42,0.15)' : '0 2px 8px rgba(0,0,0,0.04)' }}
+                  >
+                    {/* Date chip */}
+                    <div className="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #E8F5EE, #D4EDDA)', border: '1px solid rgba(27,94,55,0.12)' }}>
+                      <span className="text-[9px] font-bold uppercase" style={{ color: 'rgba(27,94,55,0.5)' }}>
+                        {dt.date.split(' ')[0]}
+                      </span>
+                      <span className="text-xl font-extrabold leading-none" style={{ color: '#0D3D20' }}>
+                        {dt.date.split(' ')[1]}
+                      </span>
+                      <span className="text-[9px]" style={{ color: 'rgba(27,94,55,0.5)' }}>
+                        {dt.date.split(' ')[2]}
+                      </span>
+                    </div>
+
+                    {/* Teacher avatar */}
+                    <div className="flex-shrink-0">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt={teacherName} className="w-10 h-10 rounded-full object-cover" />
+                        : (
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+                            style={{ background: 'linear-gradient(135deg, #1B5E37, #2A7A4A)', color: '#fff' }}>
+                            {getInitials(teacherName)}
+                          </div>
+                        )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate text-sm" style={{ color: '#0D3D20' }}>{courseName}</p>
+                      <p className="text-xs truncate mt-0.5" style={{ color: '#6B7A6B' }}>with {teacherName}</p>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="text-xs font-medium" style={{ color: '#5A7A6A' }}>{dt.time}</span>
+                        <span style={{ color: '#C0C8C0' }}>·</span>
+                        <span className="text-xs" style={{ color: '#8A9A8A' }}>{lesson.duration_mins} min</span>
+                        {dt.isToday && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+                            style={{ background: 'rgba(27,94,55,0.1)', color: '#1B5E37' }}>TODAY</span>
+                        )}
+                        {dt.isSoon && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg animate-pulse"
+                            style={{ background: 'rgba(184,149,42,0.15)', color: '#B8952A' }}>STARTING SOON</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Join button */}
+                    {lesson.meeting_url && (dt.isToday || dt.isSoon) && (
+                      <a
+                        href={lesson.meeting_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
+                        style={{ background: '#1B5E37' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0D3D20' }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#1B5E37' }}
+                      >
+                        Join →
+                      </a>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
 
-        {/* Banner */}
-        <DashboardBanner role="student" />
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-2xl bg-gradient-to-br from-[#1B5E37] to-[#0D3D20] p-6 shadow-sm">
-            {loading ? <Skeleton className="h-12 w-full" /> : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white opacity-75">Lessons Completed</p>
-                  <p className="text-4xl font-extrabold text-white mt-1">{completedCount}</p>
-                </div>
-                <span className="text-4xl opacity-80">✅</span>
-              </div>
-            )}
+        {/* Right column — My Teachers + Hadith */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+              My Teachers
+            </h2>
+            <Link href="/platform/student/bookings" className="text-xs font-medium" style={{ color: '#1B5E37' }}>
+              View all →
+            </Link>
           </div>
 
-          <div className="rounded-2xl bg-gradient-to-br from-[#B8952A] to-[#9A7B22] p-6 shadow-sm">
-            {loading ? <Skeleton className="h-12 w-full" /> : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white opacity-75">Upcoming Lessons</p>
-                  <p className="text-4xl font-extrabold text-white mt-1">{lessons.length}</p>
-                </div>
-                <span className="text-4xl opacity-80">📅</span>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-2xl bg-gradient-to-br from-[#F5F0E8] to-[#EDE7D5] p-6 shadow-sm border border-[#D4C99A]">
-            {loading ? <Skeleton className="h-12 w-full" /> : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-[#0D3D20] opacity-75">Active Bookings</p>
-                  <p className="text-4xl font-extrabold text-[#0D3D20] mt-1">{activeBookings.length}</p>
-                </div>
-                <span className="text-4xl opacity-80">📖</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-3 mb-10">
-          <Link
-            href="/platform/teachers"
-            className="inline-flex items-center gap-2 bg-[#1B5E37] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#0D3D20] transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Browse Teachers
-          </Link>
-          <Link
-            href="/platform/student/bookings"
-            className="inline-flex items-center gap-2 bg-[#B8952A] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#9A7B22] transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            My Bookings
-          </Link>
-          <Link
-            href="/platform/student/profile"
-            className="inline-flex items-center gap-2 bg-white text-[#1B5E37] border border-[#D4C99A] px-5 py-2.5 rounded-xl text-sm font-semibold hover:border-[#1B5E37] transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Edit Profile
-          </Link>
-        </div>
-
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-
-          {/* Upcoming Lessons */}
-          <section className="lg:col-span-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#0D3D20]">Upcoming Lessons</h2>
-              <Link href="/platform/student/lessons" className="text-sm text-[#1B5E37] font-medium hover:underline">
-                View all →
-              </Link>
-            </div>
-
+          {loading ? (
+            <div className="space-y-3">{[1,2].map(i => <Skeleton key={i} className="h-24" />)}</div>
+          ) : bookings.length === 0 ? (
+            <EmptyState
+              emoji="🎓"
+              title="No teachers yet"
+              sub="Find a certified Qari to start your journey."
+              cta="Browse Teachers"
+              ctaHref="/platform/teachers"
+            />
+          ) : (
             <div className="space-y-3">
-              {loading ? (
-                [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)
-              ) : lessons.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-[#D4C99A] p-10 text-center">
-                  <div className="text-5xl mb-3">📚</div>
-                  <p className="text-[#0D3D20] font-semibold mb-1">No upcoming lessons</p>
-                  <p className="text-[#1B5E37]/60 text-sm mb-4">Book a teacher to schedule your first lesson.</p>
-                  <Link
-                    href="/platform/teachers"
-                    className="inline-flex items-center gap-1.5 bg-[#1B5E37] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0D3D20] transition-colors"
+              {bookings.map((booking: any) => {
+                const teacherName = booking.teacher_profiles?.profiles?.full_name ?? 'Teacher'
+                const courseName  = booking.courses?.title ?? 'Course'
+                const avatarUrl   = booking.teacher_profiles?.profiles?.avatar_url
+                const progress    = booking.total_lessons > 0
+                  ? Math.round((booking.lessons_completed / booking.total_lessons) * 100) : 0
+
+                return (
+                  <div
+                    key={booking.id}
+                    className="rounded-2xl p-4 transition-all"
+                    style={{ background: '#fff', border: '1px solid rgba(27,94,55,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)' }}
                   >
-                    Browse Teachers
-                  </Link>
-                </div>
-              ) : (
-                lessons.map((lesson: any) => {
-                  const dt = formatDateTime(lesson.scheduled_at)
-                  const teacherName = lesson.bookings?.teacher_profiles?.profiles?.full_name ?? 'Teacher'
-                  const courseName = lesson.bookings?.courses?.title ?? 'Quran Lesson'
-                  const avatarUrl = lesson.bookings?.teacher_profiles?.profiles?.avatar_url
-
-                  return (
-                    <div
-                      key={lesson.id}
-                      className={`bg-white rounded-2xl border p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow ${dt.isSoon ? 'border-[#B8952A] ring-1 ring-[#B8952A]/30' : 'border-[#D4C99A]'}`}
-                    >
-                      {/* Date chip */}
-                      <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-[#F5F0E8] border border-[#D4C99A] flex flex-col items-center justify-center">
-                        <span className="text-[10px] font-bold text-[#1B5E37]/60 uppercase">
-                          {dt.date.split(' ')[0]}
-                        </span>
-                        <span className="text-xl font-extrabold text-[#0D3D20] leading-none">
-                          {dt.date.split(' ')[1]}
-                        </span>
-                        <span className="text-[10px] text-[#1B5E37]/60">
-                          {dt.date.split(' ')[2]}
-                        </span>
-                      </div>
-
-                      {/* Avatar */}
-                      <div className="flex-shrink-0">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt={teacherName} className="w-10 h-10 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-[#1B5E37] flex items-center justify-center text-white font-bold text-sm">
+                    <div className="flex items-center gap-3 mb-3">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt={teacherName} className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+                        : (
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #1B5E37, #2A7A4A)', color: '#fff' }}>
                             {getInitials(teacherName)}
                           </div>
                         )}
-                      </div>
-
-                      {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[#0D3D20] truncate">{courseName}</p>
-                        <p className="text-sm text-[#1B5E37]/70 truncate">with {teacherName}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-xs text-[#1B5E37]/60">{dt.time}</span>
-                          <span className="text-xs text-[#1B5E37]/40">·</span>
-                          <span className="text-xs text-[#1B5E37]/60">{lesson.duration_minutes} min</span>
-                          {dt.isToday && (
-                            <span className="text-xs bg-[#1B5E37]/10 text-[#1B5E37] px-2 py-0.5 rounded-full font-medium">
-                              Today
-                            </span>
-                          )}
-                          {dt.isSoon && (
-                            <span className="text-xs bg-[#B8952A]/15 text-[#B8952A] px-2 py-0.5 rounded-full font-semibold animate-pulse">
-                              Starting soon
-                            </span>
-                          )}
-                        </div>
+                        <p className="font-semibold truncate text-sm" style={{ color: '#0D3D20' }}>{teacherName}</p>
+                        <p className="text-xs truncate mt-0.5" style={{ color: '#8A9A8A' }}>{courseName}</p>
                       </div>
-
-                      {/* Join button */}
-                      {lesson.meeting_url && (dt.isToday || dt.isSoon) && (
-                        <a
-                          href={lesson.meeting_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-shrink-0 bg-[#1B5E37] text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#0D3D20] transition-colors"
-                        >
-                          Join
-                        </a>
-                      )}
+                      <StatusBadge status={booking.status} />
                     </div>
-                  )
-                })
-              )}
-            </div>
-          </section>
 
-          {/* My Teachers */}
-          <section className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#0D3D20]">My Teachers</h2>
-              <Link href="/platform/student/bookings" className="text-sm text-[#1B5E37] font-medium hover:underline">
-                View all →
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {loading ? (
-                [1, 2].map((i) => <Skeleton key={i} className="h-20 w-full" />)
-              ) : bookings.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-[#D4C99A] p-8 text-center">
-                  <div className="text-4xl mb-2">🎓</div>
-                  <p className="text-[#0D3D20] font-semibold text-sm mb-1">No teachers yet</p>
-                  <p className="text-[#1B5E37]/60 text-xs">Find a certified Qari to start your journey.</p>
-                </div>
-              ) : (
-                bookings.map((booking: any) => {
-                  const teacherName = booking.teacher_profiles?.profiles?.full_name ?? 'Teacher'
-                  const courseName = booking.courses?.title ?? 'Course'
-                  const avatarUrl = booking.teacher_profiles?.profiles?.avatar_url
-                  const progress = booking.total_lessons > 0
-                    ? Math.round((booking.lessons_completed / booking.total_lessons) * 100)
-                    : 0
-
-                  return (
-                    <div key={booking.id} className="bg-white rounded-2xl border border-[#D4C99A] p-4 shadow-sm">
-                      <div className="flex items-center gap-3 mb-3">
-                        {avatarUrl ? (
-                          <img src={avatarUrl} alt={teacherName} className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
-                        ) : (
-                          <div className="w-11 h-11 rounded-full bg-[#1B5E37] flex items-center justify-center text-white font-bold flex-shrink-0">
-                            {getInitials(teacherName)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[#0D3D20] truncate text-sm">{teacherName}</p>
-                          <p className="text-xs text-[#1B5E37]/60 truncate">{courseName}</p>
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${statusBadge(booking.status)}`}>
-                          {booking.status}
-                        </span>
+                    {/* Progress bar */}
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5" style={{ color: '#8A9A8A' }}>
+                        <span>{booking.lessons_completed} of {booking.total_lessons} lessons</span>
+                        <span style={{ color: '#1B5E37', fontWeight: 600 }}>{progress}%</span>
                       </div>
-
-                      {/* Progress bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-[#1B5E37]/60">
-                          <span>{booking.lessons_completed} of {booking.total_lessons} lessons</span>
-                          <span>{progress}%</span>
-                        </div>
-                        <div className="h-1.5 bg-[#F5F0E8] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#1B5E37] to-[#B8952A] rounded-full transition-all duration-500"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
+                      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F0EDE6' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${progress}%`,
+                            background: 'linear-gradient(90deg, #1B5E37, #B8952A)',
+                          }}
+                        />
                       </div>
                     </div>
-                  )
-                })
-              )}
+                  </div>
+                )
+              })}
             </div>
+          )}
 
-            {/* Hadith card */}
-            <div className="mt-4 bg-gradient-to-br from-[#1B5E37] to-[#0D3D20] rounded-2xl p-5 text-center">
-              <p className="text-[#B8952A] text-xl font-bold leading-snug mb-2" style={{ fontFamily: 'serif' }}>
-                خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
-              </p>
-              <p className="text-white/80 text-xs leading-relaxed">
-                "The best of you are those who learn the Quran and teach it."
-              </p>
-              <p className="text-[#B8952A]/70 text-xs mt-1">— Sahih Al-Bukhari</p>
-            </div>
-          </section>
-
+          {/* Quranic reminder — same as teacher dashboard */}
+          <div
+            className="rounded-2xl p-5 text-center"
+            style={{ background: 'linear-gradient(135deg, #0D3D20 0%, #1B5E37 100%)' }}
+          >
+            <p className="text-lg mb-2" style={{ fontFamily: "'Amiri', serif", color: '#D4AF50', direction: 'rtl' }}>
+              خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
+            </p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              &ldquo;The best of you are those who learn the Quran and teach it.&rdquo;
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'rgba(212,175,80,0.6)' }}>— Sahih Al-Bukhari</p>
+          </div>
         </div>
-      </main>
+
+      </div>
     </div>
   )
 }
