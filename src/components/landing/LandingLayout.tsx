@@ -155,14 +155,6 @@ export const LandingNav = () => {
 
   return (
     <>
-      {/* ── Ayah Bar (replaces old language bar) ── */}
-      <div className="ayah-bar">
-        <div className="container">
-          <span className="ayah-ar">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</span>
-          <span className="ayah-en">The best among you are those who learn the Quran and teach it — Sahih Al-Bukhari</span>
-        </div>
-      </div>
-
       {/* ── Main Nav ── */}
       <nav className="nav" id="qmg-nav">
         <div className="container">
@@ -403,11 +395,7 @@ export const LANDING_CSS = `
   .section-hd { text-align: center; margin-bottom: 64px; }
   .section-hd .ss { margin: 0 auto; }
 
-  /* ── Ayah bar (replaces old language bar) ── */
-  .ayah-bar { background: var(--green-dark); padding: 8px 0; border-bottom: 1px solid rgba(184,149,42,.2); }
-  .ayah-bar .container { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .ayah-ar { font-family: var(--fa); font-size: 13px; color: var(--gold-light); direction: rtl; }
-  .ayah-en { font-size: 11px; color: rgba(255,255,255,.35); font-style: italic; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+
 
   /* ── Language dropdown ── */
   .lang-btn { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(27,94,55,.15); color: var(--tm); font-family: var(--fb); font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: all .2s; white-space: nowrap; }
@@ -533,7 +521,6 @@ export const LANDING_CSS = `
     .ham { display: flex !important; }
     .fgrid { grid-template-columns: 1fr; gap: 28px; }
     .fg-row { grid-template-columns: 1fr; }
-    .ayah-en { display: none; }
     .footer-ayah { flex-direction: column; gap: 8px; }
   }
   @media (max-width: 480px) {
