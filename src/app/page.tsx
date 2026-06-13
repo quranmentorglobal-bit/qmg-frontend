@@ -201,9 +201,9 @@ export default function LandingPage() {
         .hero-badge{display:inline-flex;align-items:center;gap:9px;background:rgba(184,149,42,.1);border:1px solid rgba(184,149,42,.3);color:var(--gold-light);font-size:13px;font-weight:500;padding:7px 20px;border-radius:50px;margin-bottom:28px}
         .hero-badge .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.8);animation:pgreen 2s infinite}
         @keyframes pgreen{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.5)}}
-        .hero-h{font-family:var(--ff);font-size:clamp(38px,5.8vw,68px);font-weight:800;color:#fff;line-height:1.1;margin-bottom:24px}
+        .hero-h{font-family:var(--ff);font-size:clamp(38px,5.8vw,68px);font-weight:800;color:#fff;line-height:1.1;margin-bottom:24px;text-shadow:0 2px 20px rgba(0,0,0,.45)}
         .hero-h .gold{color:var(--gold-light)}
-        .hero-sub{font-size:clamp(16px,2vw,19px);color:rgba(255,255,255,.78);max-width:520px;line-height:1.72;margin-bottom:40px;min-height:60px}
+        .hero-sub{font-size:clamp(18px,2.2vw,22px);color:rgba(255,255,255,.96);max-width:560px;line-height:1.72;margin-bottom:40px;min-height:68px;font-weight:500;text-shadow:0 1px 12px rgba(0,0,0,.5)}.hero-sub::after{content:'|';animation:blink .7s step-end infinite;color:var(--gold-light);margin-left:2px}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
         .hero-btns{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:52px}
         .hero-stats{display:flex;gap:44px;padding-top:28px;border-top:1px solid rgba(255,255,255,.1);flex-wrap:wrap}
         .hstat .n{font-family:var(--ff);font-size:30px;font-weight:700;color:var(--gold-light);line-height:1}
