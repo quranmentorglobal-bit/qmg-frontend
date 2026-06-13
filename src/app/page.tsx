@@ -229,12 +229,12 @@ export default function LandingPage() {
         /* ── Features ── */
         .features{padding:100px 0;background:var(--cream)}
         .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:44px}
-        .fc{background:#fff;border-radius:var(--rl);overflow:hidden;border:1px solid transparent;transition:all .4s var(--ease);position:relative}
+        .fc{background:#fff;border-radius:var(--rl);overflow:hidden;border:1px solid transparent;transition:all .4s var(--ease);position:relative;display:flex;flex-direction:column}
         .fc:hover{box-shadow:0 20px 56px rgba(0,0,0,.12);transform:translateY(-8px);border-color:var(--gold-pale)}
-        .fc-img{aspect-ratio:4/3;overflow:hidden;background:var(--cream-d)}
+        .fc-img{height:185px;overflow:hidden;background:var(--cream-d);flex-shrink:0}
         .fc-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease);display:block}
         .fc:hover .fc-img img{transform:scale(1.07)}
-        .fc-body{padding:24px 26px 0}
+        .fc-body{padding:24px 26px 0;flex:1}
         .fc-ico{width:40px;height:40px;background:linear-gradient(135deg,var(--green),var(--green-mid));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
         .fc h3{font-family:var(--ff);font-size:18px;font-weight:700;color:var(--green-dark);margin-bottom:9px}
         .fc p{font-size:14px;color:var(--tl);line-height:1.68;margin-bottom:18px}
@@ -455,7 +455,7 @@ export default function LandingPage() {
       {/* HERO */}
       <section className="hero" id="home">
         <div className="hero-slider">
-          {/* LOCAL image paths — add 1920×1080 pngs to /public/images/hero/ */}
+          {/* LOCAL image paths — add 1920×1080 JPGs to /public/images/hero/ */}
           <div className="hs hs1 active"></div>
           <div className="hs hs2"></div>
           <div className="hs hs3"></div>
