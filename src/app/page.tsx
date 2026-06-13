@@ -231,8 +231,8 @@ export default function LandingPage() {
         .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:44px;align-items:stretch}
         .fc{background:#fff;border-radius:var(--rl);overflow:hidden;border:1px solid transparent;transition:all .4s var(--ease);position:relative;display:flex;flex-direction:column}
         .fc:hover{box-shadow:0 20px 56px rgba(0,0,0,.12);transform:translateY(-8px);border-color:var(--gold-pale)}
-        .fc-img{height:185px;overflow:hidden;background:var(--cream-d);flex-shrink:0}
-        .fc-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease);display:block}
+        .fc-img{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--cream-d);flex-shrink:0}
+        .fc-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease);display:block}
         .fc:hover .fc-img img{transform:scale(1.07)}
         .fc-body{padding:24px 26px 0;flex:1}
         .fc-ico{width:40px;height:40px;background:linear-gradient(135deg,var(--green),var(--green-mid));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px}
@@ -262,8 +262,8 @@ export default function LandingPage() {
         .cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:44px}
         .cc{border-radius:var(--rl);overflow:hidden;background:#fff;box-shadow:var(--sh);transition:all .4s var(--ease);position:relative}
         .cc:hover{box-shadow:0 24px 60px rgba(0,0,0,.14);transform:translateY(-8px)}
-        .cc-img{aspect-ratio:4/3;overflow:hidden;position:relative;background:var(--cream-d)}
-        .cc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+        .cc-img{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--cream-d)}
+        .cc-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s;display:block}
         .cc:hover .cc-img img{transform:scale(1.08)}
         .cc-lvl{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.08em;text-transform:uppercase;backdrop-filter:blur(8px)}
         .lv-b{background:rgba(74,222,128,.85);color:#064e3b}.lv-i{background:rgba(251,191,36,.85);color:#451a03}
