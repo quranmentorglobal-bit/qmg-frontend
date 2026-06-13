@@ -13,8 +13,9 @@ interface Stats {
 
 interface Booking {
   id: string
-  student_name: string
-  course_title: string
+  student_first_name?: string
+  student_last_name?: string
+  course_title?: string
   start_date: string
   session_time: string
   status: string
@@ -55,7 +56,6 @@ export default function TeacherDashboardPage() {
     const today = new Date().toISOString().split('T')[0]
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
-    // Pending bookings with student info
     const { data: bookingsData } = await supabase
       .from('teacher_bookings_view')
       .select('*')
@@ -63,17 +63,15 @@ export default function TeacherDashboardPage() {
       .eq('status', 'pending')
       .order('start_date', { ascending: true })
 
-    // Upcoming lessons
     const { data: lessonsData } = await supabase
       .from('lessons')
-      .select('id, scheduled_at, status, duration_mins, teacher_notes')
+      .select('id, scheduled_at, status, duration_mins')
       .eq('teacher_id', teacherId)
       .in('status', ['scheduled', 'live'])
       .gte('scheduled_at', new Date().toISOString())
       .order('scheduled_at', { ascending: true })
       .limit(5)
 
-    // Stats
     const { count: studentCount } = await supabase
       .from('bookings')
       .select('student_id', { count: 'exact', head: true })
@@ -111,7 +109,6 @@ export default function TeacherDashboardPage() {
 
     setPendingBookings((bookingsData as any) || [])
 
-    // Map lessons with student name from bookings join
     setUpcomingLessons(
       (lessonsData || []).map((l: any) => ({
         id: l.id,
@@ -129,22 +126,21 @@ export default function TeacherDashboardPage() {
   async function handleBookingAction(bookingId: string, action: 'confirmed' | 'cancelled') {
     setActionLoading(bookingId + action)
     try {
+      const updateData: any = { status: action }
+      if (action === 'cancelled') updateData.cancel_reason = 'Declined by teacher'
+
       const { error } = await supabase
         .from('bookings')
-        .update({
-          status: action,
-          ...(action === 'cancelled' ? { cancel_reason: 'Declined by teacher' } : {}),
-        })
+        .update(updateData)
         .eq('id', bookingId)
 
       if (error) throw error
 
-      // Remove from pending list
       setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
       setStats(prev => ({ ...prev, pendingBookings: prev.pendingBookings - 1 }))
 
       showToast(
-        action === 'confirmed' ? '✅ Booking confirmed! Student will be notified.' : '❌ Booking declined.',
+        action === 'confirmed' ? '✅ Booking confirmed!' : '❌ Booking declined.',
         'success'
       )
     } catch (err: any) {
@@ -178,7 +174,7 @@ export default function TeacherDashboardPage() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
+        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium ${
           toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
         }`}>
           {toast.message}
@@ -239,8 +235,8 @@ export default function TeacherDashboardPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-semibold text-gray-900">
-                        {(booking as any).student_first_name
-                          ? `${(booking as any).student_first_name} ${(booking as any).student_last_name || ''}`
+                        {booking.student_first_name
+                          ? `${booking.student_first_name} ${booking.student_last_name || ''}`
                           : 'New Student'}
                       </span>
                       {booking.is_trial && (
@@ -250,11 +246,9 @@ export default function TeacherDashboardPage() {
                       )}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {(booking as any).course_title || 'Course'} &middot; {formatDate(booking.start_date)} &middot; {booking.session_time?.slice(0, 5)}
+                      {booking.course_title || 'Course'} &middot; {formatDate(booking.start_date)} &middot; {booking.session_time?.slice(0, 5)}
                     </div>
-                    <div className="text-sm font-semibold text-green-700 mt-1">
-                      ${booking.price_usd}
-                    </div>
+                    <div className="text-sm font-semibold text-green-700 mt-1">${booking.price_usd}</div>
                     {booking.student_notes && (
                       <div className="text-xs text-gray-400 mt-1 italic">"{booking.student_notes}"</div>
                     )}
@@ -265,7 +259,7 @@ export default function TeacherDashboardPage() {
                       onClick={() => handleBookingAction(booking.id, 'confirmed')}
                       disabled={actionLoading !== null}
                       className="flex-1 md:flex-none px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-                      style={{ backgroundColor: actionLoading === booking.id + 'confirmed' ? '#aaa' : '#1B5E37' }}
+                      style={{ backgroundColor: '#1B5E37' }}
                     >
                       {actionLoading === booking.id + 'confirmed' ? 'Accepting...' : 'Accept'}
                     </button>
