@@ -82,6 +82,8 @@ export default function CoursesPage() {
         .tstrip-item{transition:transform .3s}.tstrip-item:hover{transform:translateY(-4px)}
 
         .page-hero{background-color:var(--green-dark)}
+        .page-hero-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:-1; display:block; }
+
         #stbtn{position:fixed;bottom:28px;right:28px;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-mid));color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;transition:all .4s;box-shadow:0 4px 20px rgba(27,94,55,.4)}
         #stbtn:hover{transform:translateY(-4px) scale(1.05)}
 
