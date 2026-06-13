@@ -6,7 +6,7 @@ import Link from 'next/link'
 const TEACHERS = [
   {
     spec: 'tajweed hifz',
-    img: '/images/teachers/teacher-1.jpg',
+    img: '/images/teachers/teacher-1.png',
     name: 'Qari Abdullah',
     title: 'Tajweed & Hifz Specialist',
     origin: 'Pakistan', flag: '🇵🇰',
@@ -18,7 +18,7 @@ const TEACHERS = [
   },
   {
     spec: 'tafseer tajweed',
-    img: '/images/teachers/teacher-2.jpg',
+    img: '/images/teachers/teacher-2.png',
     name: 'Sheikh Ibrahim',
     title: 'Tafseer & Advanced Quran',
     origin: 'Saudi Arabia', flag: '🇸🇦',
@@ -30,7 +30,7 @@ const TEACHERS = [
   },
   {
     spec: 'qaida kids',
-    img: '/images/teachers/teacher-3.jpg',
+    img: '/images/teachers/teacher-3.png',
     name: 'Qari Yusuf',
     title: 'Noorani Qaida · Kids Specialist',
     origin: 'Pakistan', flag: '🇵🇰',
@@ -42,7 +42,7 @@ const TEACHERS = [
   },
   {
     spec: 'hifz',
-    img: '/images/teachers/teacher-4.jpg',
+    img: '/images/teachers/teacher-4.png',
     name: 'Ustadh Bilal',
     title: 'Hifz · Memorization',
     origin: 'Egypt', flag: '🇪🇬',
@@ -54,7 +54,7 @@ const TEACHERS = [
   },
   {
     spec: 'tajweed kids',
-    img: '/images/teachers/teacher-5.jpg',
+    img: '/images/teachers/teacher-5.png',
     name: 'Qari Hassan',
     title: 'Tajweed for All Ages',
     origin: 'United Kingdom', flag: '🇬🇧',
@@ -66,7 +66,7 @@ const TEACHERS = [
   },
   {
     spec: 'tafseer hifz',
-    img: '/images/teachers/teacher-6.jpg',
+    img: '/images/teachers/teacher-6.png',
     name: 'Sheikh Tariq',
     title: 'Tafseer & Hifz Programme',
     origin: 'Saudi Arabia', flag: '🇸🇦',
@@ -162,8 +162,8 @@ export default function TeachersLandingPage() {
       <LandingNav />
 
       {/* ── Page Hero ── */}
-      <section className="page-hero" style={{backgroundImage:"url('/images/teachers/teachers-hero.jpg')"}}>
-        <div className="page-hero-bg" style={{backgroundImage:"url('/images/teachers/teachers-hero.jpg')"}}></div>
+      <section className="page-hero" style={{backgroundImage:"url('/images/teachers/teachers-hero.png')"}}>
+        <div className="page-hero-bg" style={{backgroundImage:"url('/images/teachers/teachers-hero.png')"}}></div>
         <div className="container">
           <div className="breadcrumb">
             <Link href="/">Home</Link><span className="sep">›</span><span>Our Teachers</span>
