@@ -129,7 +129,7 @@ export default function TeacherDashboardPage() {
       const updateData: any = { status: action }
       if (action === 'cancelled') updateData.cancel_reason = 'Declined by teacher'
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('bookings')
         .update(updateData)
         .eq('id', bookingId)
