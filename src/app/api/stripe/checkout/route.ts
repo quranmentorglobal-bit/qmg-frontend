@@ -1,64 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// ── Stripe (optional — works without it in mock mode) ─────────────────────────
-let stripe: any = null
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    const Stripe = require('stripe')
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
-  }
-} catch { /* stripe not installed yet */ }
-
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.quranmentorglobal.com'
 
 // ── Helper: get or create billing profile ─────────────────────────────────────
 
 async function getOrCreateBillingProfile(supabase: any, payerId: string, studentId: string, payerType: string) {
+  // Try to find existing
   const { data: existing } = await supabase
     .from('billing_profiles')
     .select('*')
     .eq('payer_id', payerId)
     .eq('student_id', studentId)
-    .single()
+    .maybeSingle()
 
-  if (existing) return existing
+  if (existing) return { profile: existing, error: null }
 
-  const { data: newProfile } = await supabase
+  // Create new
+  const { data: newProfile, error } = await supabase
     .from('billing_profiles')
     .insert({ payer_id: payerId, student_id: studentId, payer_type: payerType })
     .select('*')
     .single()
 
-  return newProfile
+  return { profile: newProfile, error }
 }
 
 // ── Helper: get active commission rate ────────────────────────────────────────
 
-async function getCommissionRate(supabase: any, teacherId: string): Promise<{ id: string; rate: number }> {
-  // Check teacher-specific rate first
-  const { data: teacherRate } = await supabase
-    .from('commission_rates')
-    .select('id, rate_percent')
-    .eq('teacher_id', teacherId)
-    .is('effective_to', null)
-    .order('effective_from', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (teacherRate) return { id: teacherRate.id, rate: teacherRate.rate_percent }
-
-  // Fall back to global rate
-  const { data: globalRate } = await supabase
+async function getCommissionRate(supabase: any): Promise<{ id: string | null; rate: number }> {
+  const { data } = await supabase
     .from('commission_rates')
     .select('id, rate_percent')
     .eq('applies_to', 'all')
     .is('effective_to', null)
     .order('effective_from', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
-  return { id: globalRate?.id, rate: globalRate?.rate_percent ?? 15 }
+  return { id: data?.id ?? null, rate: data?.rate_percent ?? 15 }
 }
 
 // ── POST /api/stripe/checkout ─────────────────────────────────────────────────
@@ -67,95 +47,122 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const body = await req.json()
-    const {
-      booking_id,
-      amount_usd,
-      description,
-      payment_type = 'trial',
-      student_id,       // may differ from user.id if parent is paying
-      package_id,
-    } = body
+    const { booking_id, amount_usd, description, payment_type = 'trial', student_id, package_id } = body
 
     if (!booking_id || !amount_usd) {
       return NextResponse.json({ error: 'booking_id and amount_usd are required' }, { status: 400 })
     }
 
-    // ── Verify booking exists and belongs to student ──────────────────────────
-    const { data: booking } = await (supabase as any)
+    // ── Verify booking ────────────────────────────────────────────────────────
+    const { data: booking, error: bookingErr } = await (supabase as any)
       .from('bookings')
       .select('id, student_id, teacher_id, course_id, price_usd, status, is_trial')
       .eq('id', booking_id)
       .single()
 
-    if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
-    if (booking.status !== 'pending') return NextResponse.json({ error: 'Booking is not pending' }, { status: 400 })
+    if (bookingErr || !booking) {
+      return NextResponse.json({ error: 'Booking not found: ' + (bookingErr?.message ?? '') }, { status: 404 })
+    }
 
-    // Determine payer info
-    const payerProfile = await (supabase as any).from('profiles').select('role, first_name, last_name, email').eq('id', user.id).single()
-    const payerType = payerProfile.data?.role === 'parent' ? 'parent' : 'student'
+    if (booking.status !== 'pending') {
+      return NextResponse.json({ error: `Booking status is "${booking.status}", expected "pending"` }, { status: 400 })
+    }
+
+    // ── Payer info ────────────────────────────────────────────────────────────
+    const { data: payerProfile } = await (supabase as any)
+      .from('profiles')
+      .select('role, first_name, last_name, email')
+      .eq('id', user.id)
+      .single()
+
+    const payerType = payerProfile?.role === 'parent' ? 'parent' : 'student'
     const actualStudentId = student_id || booking.student_id
 
-    // Get or create billing profile
-    const billingProfile = await getOrCreateBillingProfile(supabase as any, user.id, actualStudentId, payerType)
-    if (!billingProfile) return NextResponse.json({ error: 'Could not create billing profile' }, { status: 500 })
+    // ── Billing profile ───────────────────────────────────────────────────────
+    const { profile: billingProfile, error: bpError } = await getOrCreateBillingProfile(
+      supabase as any, user.id, actualStudentId, payerType
+    )
 
-    // Get commission rate
-    const commission = await getCommissionRate(supabase as any, booking.teacher_id)
+    if (bpError || !billingProfile) {
+      console.error('Billing profile error:', bpError)
+      // Don't block payment if billing_profiles table doesn't exist yet
+      // Fall through with null billing profile
+    }
+
+    // ── Commission ────────────────────────────────────────────────────────────
+    const commission = await getCommissionRate(supabase as any)
     const grossAmount = parseFloat(amount_usd)
     const platformFee = Math.round(grossAmount * commission.rate / 100 * 100) / 100
     const teacherPayout = Math.round((grossAmount - platformFee) * 100) / 100
 
-    // Idempotency key — prevents duplicate payments for same booking
-    const idempotencyKey = `booking_${booking_id}_${Date.now()}`
+    // ── Idempotency key ───────────────────────────────────────────────────────
+    // Use booking_id only (not timestamp) so retries reuse same key
+    const idempotencyKey = `booking_${booking_id}_v1`
 
-    // ── MOCK MODE (no Stripe key) ─────────────────────────────────────────────
-    if (!stripe || !process.env.STRIPE_SECRET_KEY) {
-      // Create payment record with mock provider
-      const { data: payment } = await (supabase as any)
+    // ── MOCK MODE ─────────────────────────────────────────────────────────────
+    // Always use mock if no Stripe key configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+
+      // Check if payment already exists for this booking (idempotency)
+      const { data: existingPayment } = await (supabase as any)
         .from('payments')
-        .insert({
-          student_id:         actualStudentId,
-          teacher_id:         booking.teacher_id,
-          booking_id:         booking_id,
-          billing_profile_id: billingProfile.id,
-          payer_type:         payerType,
-          payer_id:           user.id,
-          provider:           'mock',
-          provider_payment_id: `mock_${Date.now()}`,
-          payment_type:       payment_type,
-          package_id:         package_id || null,
-          gross_amount_usd:   grossAmount,
-          platform_fee_usd:   platformFee,
-          teacher_payout_usd: teacherPayout,
-          commission_rate_id: commission.id,
-          commission_percent: commission.rate,
-          status:             'succeeded',   // mock = instant success
-          currency:           'USD',
-          idempotency_key:    idempotencyKey,
-          description:        description || 'Quran Lesson — Mock Payment',
+        .select('id, status')
+        .eq('booking_id', booking_id)
+        .eq('provider', 'mock')
+        .maybeSingle()
+
+      if (existingPayment?.status === 'succeeded') {
+        // Already paid — redirect to success
+        return NextResponse.json({
+          mode: 'mock',
+          payment_id: existingPayment.id,
+          redirect_url: `${APP_URL}/platform/student/bookings?payment=success&booking=${booking_id}`,
         })
+      }
+
+      // Build payment insert — only include billing_profile_id if we have it
+      const paymentInsert: any = {
+        student_id:         actualStudentId,
+        teacher_id:         booking.teacher_id,
+        booking_id:         booking_id,
+        payer_type:         payerType,
+        payer_id:           user.id,
+        provider:           'mock',
+        provider_payment_id: `mock_pi_${Date.now()}`,
+        payment_type:       payment_type,
+        gross_amount_usd:   grossAmount,
+        platform_fee_usd:   platformFee,
+        teacher_payout_usd: teacherPayout,
+        commission_percent: commission.rate,
+        status:             'succeeded',
+        currency:           'USD',
+        idempotency_key:    idempotencyKey,
+        description:        description || 'Quran Lesson — Mock Payment',
+        metadata:           { mode: 'mock', payer_id: user.id },
+      }
+
+      if (billingProfile?.id) paymentInsert.billing_profile_id = billingProfile.id
+      if (commission.id)      paymentInsert.commission_rate_id  = commission.id
+      if (package_id)         paymentInsert.package_id          = package_id
+
+      const { data: payment, error: paymentErr } = await (supabase as any)
+        .from('payments')
+        .insert(paymentInsert)
         .select('id')
         .single()
 
-      if (!payment) return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 })
+      if (paymentErr || !payment) {
+        console.error('Payment insert error:', paymentErr)
+        return NextResponse.json({
+          error: 'Failed to create payment record: ' + (paymentErr?.message ?? 'unknown error'),
+        }, { status: 500 })
+      }
 
-      // Log attempt
-      await (supabase as any).from('payment_attempts').insert({
-        payment_id:         payment.id,
-        billing_profile_id: billingProfile.id,
-        booking_id:         booking_id,
-        provider:           'mock',
-        provider_attempt_id: `mock_attempt_${Date.now()}`,
-        amount_usd:         grossAmount,
-        status:             'succeeded',
-        idempotency_key:    idempotencyKey,
-        metadata:           { mode: 'mock', description: 'Test mode — no real charge' },
-      })
-
-      // Return mock success URL
       return NextResponse.json({
         mode: 'mock',
         payment_id: payment.id,
@@ -165,19 +172,29 @@ export async function POST(req: NextRequest) {
 
     // ── STRIPE MODE ───────────────────────────────────────────────────────────
 
-    // Get or create Stripe customer
-    let stripeCustomerId = billingProfile.stripe_customer_id
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        email: payerProfile.data?.email || user.email,
-        name: `${payerProfile.data?.first_name || ''} ${payerProfile.data?.last_name || ''}`.trim(),
-        metadata: { billing_profile_id: billingProfile.id, payer_id: user.id, student_id: actualStudentId },
-      })
-      stripeCustomerId = customer.id
-      await (supabase as any).from('billing_profiles').update({ stripe_customer_id: stripeCustomerId }).eq('id', billingProfile.id)
+    let stripe: any
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const Stripe = require('stripe')
+      stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+    } catch {
+      return NextResponse.json({ error: 'Stripe package not installed. Run: npm install stripe' }, { status: 500 })
     }
 
-    // Create Stripe Checkout Session
+    // Get or create Stripe customer
+    let stripeCustomerId = billingProfile?.stripe_customer_id
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: payerProfile?.email || user.email,
+        name: `${payerProfile?.first_name || ''} ${payerProfile?.last_name || ''}`.trim(),
+        metadata: { payer_id: user.id, student_id: actualStudentId },
+      })
+      stripeCustomerId = customer.id
+      if (billingProfile?.id) {
+        await (supabase as any).from('billing_profiles').update({ stripe_customer_id: stripeCustomerId }).eq('id', billingProfile.id)
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       payment_method_types: ['card'],
@@ -185,10 +202,10 @@ export async function POST(req: NextRequest) {
       line_items: [{
         price_data: {
           currency: 'usd',
-          unit_amount: Math.round(grossAmount * 100), // cents
+          unit_amount: Math.round(grossAmount * 100),
           product_data: {
-            name: description || `Quran Lesson — ${booking.is_trial ? 'Trial' : 'Session'}`,
-            description: `QuranMentorGlobal.com`,
+            name: description || `Quran Lesson`,
+            description: 'QuranMentorGlobal.com',
           },
         },
         quantity: 1,
@@ -199,67 +216,44 @@ export async function POST(req: NextRequest) {
         booking_id,
         student_id: actualStudentId,
         teacher_id: booking.teacher_id,
-        billing_profile_id: billingProfile.id,
         payer_id: user.id,
         payer_type: payerType,
         payment_type,
-        commission_rate_id: commission.id,
-        commission_percent: commission.rate.toString(),
         idempotency_key: idempotencyKey,
       },
-      payment_intent_data: {
-        metadata: { booking_id, idempotency_key: idempotencyKey },
-      },
-    }, {
-      idempotencyKey, // Stripe-level idempotency
     })
 
-    // Create pending payment record
-    const { data: payment } = await (supabase as any)
-      .from('payments')
-      .insert({
-        student_id:           actualStudentId,
-        teacher_id:           booking.teacher_id,
-        booking_id:           booking_id,
-        billing_profile_id:   billingProfile.id,
-        payer_type:           payerType,
-        payer_id:             user.id,
-        provider:             'stripe',
-        provider_payment_id:  session.payment_intent,
-        provider_customer_id: stripeCustomerId,
-        payment_type,
-        package_id:           package_id || null,
-        gross_amount_usd:     grossAmount,
-        platform_fee_usd:     platformFee,
-        teacher_payout_usd:   teacherPayout,
-        commission_rate_id:   commission.id,
-        commission_percent:   commission.rate,
-        status:               'pending',
-        currency:             'USD',
-        idempotency_key:      idempotencyKey,
-        description:          description || 'Quran Lesson',
-        metadata:             { stripe_session_id: session.id },
-      })
-      .select('id')
-      .single()
-
-    // Log attempt
-    await (supabase as any).from('payment_attempts').insert({
-      payment_id:           payment?.id,
-      billing_profile_id:   billingProfile.id,
-      booking_id,
+    // Create pending payment
+    const stripeInsert: any = {
+      student_id:           actualStudentId,
+      teacher_id:           booking.teacher_id,
+      booking_id:           booking_id,
+      payer_type:           payerType,
+      payer_id:             user.id,
       provider:             'stripe',
-      provider_attempt_id:  session.id,
-      amount_usd:           grossAmount,
+      provider_payment_id:  session.payment_intent,
+      provider_customer_id: stripeCustomerId,
+      payment_type,
+      gross_amount_usd:     grossAmount,
+      platform_fee_usd:     platformFee,
+      teacher_payout_usd:   teacherPayout,
+      commission_percent:   commission.rate,
       status:               'pending',
+      currency:             'USD',
       idempotency_key:      idempotencyKey,
+      description:          description || 'Quran Lesson',
       metadata:             { stripe_session_id: session.id },
-    })
+    }
+
+    if (billingProfile?.id) stripeInsert.billing_profile_id = billingProfile.id
+    if (commission.id)      stripeInsert.commission_rate_id  = commission.id
+
+    await (supabase as any).from('payments').insert(stripeInsert)
 
     return NextResponse.json({ mode: 'stripe', checkout_url: session.url })
 
   } catch (err: any) {
-    console.error('Checkout error:', err)
+    console.error('Checkout route error:', err)
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 })
   }
 }
