@@ -124,6 +124,7 @@ export default function BookTrialPage() {
   const [startDate, setStartDate] = useState('')
   const [notes, setNotes] = useState('')
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const [isTrialMode, setIsTrialMode] = useState(true)
 
   // ── Load teacher + courses ──
   useEffect(() => {
@@ -176,7 +177,7 @@ export default function BookTrialPage() {
     load()
   }, [teacherId])
 
-  // ── Submit booking ──
+  // ── Submit booking + payment ──
   async function handleConfirm() {
     if (!selectedCourse || !selectedDay || !selectedTime || !startDate) {
       setError('Please fill in all required fields.')
@@ -189,26 +190,62 @@ export default function BookTrialPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.replace('/auth/login'); return }
 
-    const { error: bookingError } = await supabase
+    // Step 1: Create booking record
+    const { data: newBooking, error: bookingError } = await (supabase as any)
       .from('bookings')
       .insert([{
         student_id:    user.id,
         teacher_id:    teacherId,
         course_id:     selectedCourse.id,
-        status:        'pending' as const,
+        status:        'pending',
         start_date:    startDate,
         recurrence:    recurrence,
         session_time:  selectedTime,
         duration_mins: selectedCourse.duration_mins,
-        price_usd:     selectedCourse.trial_price_usd,
-        is_trial:      true,
+        price_usd:     isTrialMode ? selectedCourse.trial_price_usd : selectedCourse.price_usd,
+        is_trial:      isTrialMode,
         student_notes: notes || null,
-      }] as any)
+      }])
+      .select('id')
+      .single()
 
-    if (bookingError) {
-      console.error('Booking error:', bookingError)
-      setError(bookingError.message || 'Something went wrong. Please try again.')
+    if (bookingError || !newBooking) {
+      setError(bookingError?.message || 'Something went wrong. Please try again.')
       setSubmitting(false)
+      return
+    }
+
+    // Step 2: Create checkout session
+    const amount = isTrialMode ? selectedCourse.trial_price_usd : selectedCourse.price_usd
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        booking_id:   newBooking.id,
+        amount_usd:   amount,
+        payment_type: isTrialMode ? 'trial' : 'single_lesson',
+        description:  `${selectedCourse.title} with ${teacher?.first_name} ${teacher?.last_name}`,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || 'Payment setup failed.')
+      setSubmitting(false)
+      return
+    }
+
+    // Mock mode: redirect to success
+    if (data.mode === 'mock') {
+      setSuccess(true)
+      setSubmitting(false)
+      return
+    }
+
+    // Stripe mode: redirect to Stripe Checkout
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url
       return
     }
 
