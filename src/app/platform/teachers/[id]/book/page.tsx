@@ -236,10 +236,11 @@ export default function BookTrialPage() {
       return
     }
 
-    // Mock mode: redirect to success
+    // Mock mode: redirect to branded checkout page
     if (data.mode === 'mock') {
-      setSuccess(true)
-      setSubmitting(false)
+      const amt = isTrialMode ? selectedCourse?.trial_price_usd : selectedCourse?.price_usd
+      const desc = encodeURIComponent(`${selectedCourse?.title} with ${teacher?.first_name} ${teacher?.last_name}`)
+      router.push(`/platform/checkout/${newBooking.id}?amount=${amt}&desc=${desc}`)
       return
     }
 
