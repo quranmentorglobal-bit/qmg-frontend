@@ -2,264 +2,264 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
 
-interface PaymentRecord {
+interface Invoice {
   id: string
-  created_at: string
-  gross_amount_usd: number
-  platform_fee_usd: number
+  invoice_number: string
   status: string
-  method: string
-  student_name: string
-  course_title: string | null
-  teacher_name: string
-  is_trial: boolean
+  total_usd: number
+  platform_fee_usd: number
+  description: string | null
+  paid_at: string | null
+  issued_at: string | null
+  created_at: string
+  teacher_name?: string
+  course_title?: string
+  student_name?: string
 }
 
-type Filter = 'all' | 'succeeded' | 'pending' | 'refunded'
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
+interface PaymentSummary {
+  totalSpent: number
+  thisMonth: number
+  invoiceCount: number
+  activeChildren: number
 }
 
-function statusBadge(s: string) {
-  if (s === 'succeeded') return 'bg-green-100 text-green-700'
-  if (s === 'pending')   return 'bg-yellow-100 text-yellow-700'
-  if (s === 'failed')    return 'bg-red-100 text-red-600'
-  if (s === 'refunded')  return 'bg-blue-100 text-blue-600'
-  return 'bg-gray-100 text-gray-500'
-}
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-function methodIcon(m: string) {
-  if (m === 'stripe')   return '💳'
-  if (m === 'jazzcash') return '📱'
-  return '💰'
+function fmt(usd: number) { return `$${usd.toFixed(2)}` }
+function fmtDate(iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
-
 function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse bg-[#EDE6D6] rounded-lg ${className}`} />
+  return <div className={`animate-pulse bg-[#EDE6D6] rounded-2xl ${className}`} />
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; color: string }> = {
+    paid:     { bg: 'rgba(27,94,55,0.1)',    color: '#1B5E37' },
+    issued:   { bg: 'rgba(184,149,42,0.12)', color: '#B8952A' },
+    void:     { bg: 'rgba(239,68,68,0.1)',   color: '#DC2626' },
+    overdue:  { bg: 'rgba(239,68,68,0.1)',   color: '#DC2626' },
+    draft:    { bg: 'rgba(0,0,0,0.06)',      color: '#666' },
+  }
+  const s = map[status] ?? map.draft
+  return (
+    <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase"
+      style={{ background: s.bg, color: s.color }}>
+      {status}
+    </span>
+  )
+}
+
+function KpiCard({ label, value, icon, gradient, loading }: {
+  label: string; value: string; icon: string; gradient: string; loading: boolean
+}) {
+  if (loading) return <Skeleton className="h-28" />
+  return (
+    <div className="rounded-2xl p-5 flex flex-col justify-between transition-all duration-200"
+      style={{ background: gradient, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1px solid rgba(255,255,255,0.6)' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}>
+      <div className="text-2xl mb-3">{icon}</div>
+      <div>
+        <div className="text-2xl font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>{value}</div>
+        <div className="text-xs font-medium mt-0.5" style={{ color: '#5A7A6A' }}>{label}</div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main ───────────────────────────────────────────────────────────────────────
 
 export default function ParentBillingPage() {
-  const [payments, setPayments]   = useState<PaymentRecord[]>([])
-  const [filtered, setFiltered]   = useState<PaymentRecord[]>([])
-  const [filter, setFilter]       = useState<Filter>('all')
-  const [loading, setLoading]     = useState(true)
-  const [totalSpent, setTotalSpent] = useState(0)
-  const [thisMonth, setThisMonth] = useState(0)
   const supabase = createClient()
+  const [invoices, setInvoices]   = useState<Invoice[]>([])
+  const [summary, setSummary]     = useState<PaymentSummary>({ totalSpent: 0, thisMonth: 0, invoiceCount: 0, activeChildren: 0 })
+  const [loading, setLoading]     = useState(true)
+  const [filter, setFilter]       = useState<'all' | 'paid' | 'pending'>('all')
 
-  useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { window.location.href = '/auth/login'; return }
+  useEffect(() => { loadBilling() }, [])
 
-      const { data: profileData } = await (supabase as any)
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      const profile = profileData as { role: string } | null
-      if (profile?.role !== 'parent') { window.location.href = '/auth/login'; return }
+  async function loadBilling() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-      // Children IDs
-      const { data: links } = await supabase
-        .from('parent_children')
-        .select('child_id')
-        .eq('parent_id', user.id)
+    // Get billing profiles where this user is the payer
+    const { data: bps } = await (supabase as any)
+      .from('billing_profiles').select('id, student_id').eq('payer_id', user.id)
 
-      const childIds = (links ?? []).map((r: any) => r.child_id)
+    const bpIds = (bps ?? []).map((b: any) => b.id)
+    const studentIds = (bps ?? []).map((b: any) => b.student_id)
 
-      if (childIds.length === 0) {
-        setLoading(false)
-        return
-      }
+    if (bpIds.length === 0) { setLoading(false); return }
 
-      // Payments for all children
-      const { data: raw } = await supabase
-        .from('payments')
-        .select(`
-          id, created_at, gross_amount_usd, platform_fee_usd, status, method,
-          student:profiles!payments_student_id_fkey (first_name, last_name),
-          booking:bookings!payments_booking_id_fkey (
-            is_trial,
-            course:courses!bookings_course_id_fkey (title),
-            teacher:profiles!bookings_teacher_id_fkey (first_name, last_name)
-          )
-        `)
-        .in('student_id', childIds)
-        .order('created_at', { ascending: false })
-        .limit(100)
+    // Get invoices
+    const { data: rawInvoices } = await (supabase as any)
+      .from('invoices')
+      .select(`
+        id, invoice_number, status, total_usd, platform_fee_usd,
+        description, paid_at, issued_at, created_at,
+        teacher:profiles!invoices_teacher_id_fkey(first_name, last_name),
+        student:profiles!invoices_student_id_fkey(first_name, last_name)
+      `)
+      .in('billing_profile_id', bpIds)
+      .order('created_at', { ascending: false })
 
-      const list: PaymentRecord[] = (raw ?? []).map((r: any) => ({
-        id: r.id,
-        created_at: r.created_at,
-        gross_amount_usd: r.gross_amount_usd ?? 0,
-        platform_fee_usd: r.platform_fee_usd ?? 0,
-        status: r.status,
-        method: r.method,
-        student_name: `${r.student?.first_name ?? ''} ${r.student?.last_name ?? ''}`.trim(),
-        course_title: r.booking?.course?.title ?? null,
-        teacher_name: `${r.booking?.teacher?.first_name ?? ''} ${r.booking?.teacher?.last_name ?? ''}`.trim(),
-        is_trial: r.booking?.is_trial ?? false,
-      }))
+    const inv: Invoice[] = (rawInvoices ?? []).map((i: any) => ({
+      ...i,
+      teacher_name: i.teacher ? `${i.teacher.first_name} ${i.teacher.last_name}` : 'Teacher',
+      student_name: i.student ? `${i.student.first_name} ${i.student.last_name}` : 'Child',
+    }))
+    setInvoices(inv)
 
-      setPayments(list)
-      setFiltered(list)
+    // Summary
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0)
+    const totalSpent = inv.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_usd, 0)
+    const thisMonth  = inv.filter(i => i.status === 'paid' && i.paid_at && new Date(i.paid_at) >= monthStart).reduce((s, i) => s + i.total_usd, 0)
+    setSummary({ totalSpent, thisMonth, invoiceCount: inv.length, activeChildren: studentIds.length })
+    setLoading(false)
+  }
 
-      const succeeded = list.filter(p => p.status === 'succeeded')
-      setTotalSpent(succeeded.reduce((sum, p) => sum + p.gross_amount_usd, 0))
-
-      const monthStart = new Date()
-      monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0)
-      const monthPayments = succeeded.filter(p => new Date(p.created_at) >= monthStart)
-      setThisMonth(monthPayments.reduce((sum, p) => sum + p.gross_amount_usd, 0))
-
-      setLoading(false)
-    }
-    load()
-  }, [])
-
-  useEffect(() => {
-    if (filter === 'all') setFiltered(payments)
-    else setFiltered(payments.filter(p => p.status === filter))
-  }, [filter, payments])
-
-  // ── Render ──────────────────────────────────────────────────────────────────
-
-  const filters: { key: Filter; label: string }[] = [
-    { key: 'all',       label: 'All Payments' },
-    { key: 'succeeded', label: 'Paid' },
-    { key: 'pending',   label: 'Pending' },
-    { key: 'refunded',  label: 'Refunded' },
-  ]
+  const filtered = invoices.filter(i => {
+    if (filter === 'paid')    return i.status === 'paid'
+    if (filter === 'pending') return i.status !== 'paid'
+    return true
+  })
 
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
-      <div className="">
+    <div>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#B8952A' }}>Billing</p>
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+            Billing & Payments
+          </h1>
+          <p className="text-sm mt-1" style={{ color: '#6B7A6B' }}>
+            View all invoices, payment history and manage your children&apos;s billing.
+          </p>
+        </div>
+        <Link href="/platform/teachers"
+          className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white flex-shrink-0 transition-all"
+          style={{ background: '#1B5E37' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#0D3D20' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#1B5E37' }}>
+          Book a Lesson
+        </Link>
+      </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-['Playfair_Display'] text-3xl font-bold text-[#0D3D20]">Billing & Payments</h1>
-          <p className="text-sm text-[#888] mt-1">Payment history for all your children's lessons.</p>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <KpiCard label="Total Spent"       value={loading ? '—' : fmt(summary.totalSpent)} icon="💳" gradient="linear-gradient(135deg, #E8F5EE, #D4EDDA)" loading={loading} />
+        <KpiCard label="This Month"        value={loading ? '—' : fmt(summary.thisMonth)}  icon="📅" gradient="linear-gradient(135deg, #FFF8E8, #FDEFC9)" loading={loading} />
+        <KpiCard label="Total Invoices"    value={loading ? '—' : String(summary.invoiceCount)} icon="🧾" gradient="linear-gradient(135deg, #EEF2FF, #E0E7FF)" loading={loading} />
+        <KpiCard label="Children Enrolled" value={loading ? '—' : String(summary.activeChildren)} icon="👨‍👩‍👧" gradient="linear-gradient(135deg, #F5F0FF, #EDE9FE)" loading={loading} />
+      </div>
+
+      {/* Info banner — mock mode */}
+      <div className="rounded-2xl p-4 mb-6 flex items-start gap-3"
+        style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
+        <span className="text-xl flex-shrink-0">🧪</span>
+        <div>
+          <p className="text-sm font-semibold" style={{ color: '#4338CA' }}>Test Mode Active</p>
+          <p className="text-xs mt-0.5" style={{ color: '#6366F1' }}>
+            No real payments are being processed. Stripe will be enabled before launch. All bookings and invoices are recorded exactly as they will be in production.
+          </p>
+        </div>
+      </div>
+
+      {/* Invoice Table */}
+      <div className="rounded-2xl overflow-hidden"
+        style={{ background: '#fff', border: '1px solid rgba(27,94,55,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+
+        {/* Table header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ borderColor: 'rgba(27,94,55,0.07)', background: 'rgba(248,245,240,0.5)' }}>
+          <h2 className="font-bold text-sm" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+            Invoice History
+          </h2>
+          <div className="flex gap-1 rounded-xl p-1" style={{ background: '#F5F0E8' }}>
+            {(['all', 'paid', 'pending'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
+                style={filter === f
+                  ? { background: '#1B5E37', color: '#fff' }
+                  : { color: '#7A8A7A' }}>
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {loading ? (
-            Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-          ) : (
-            <>
-              {[
-                { label: 'Total Spent (All Time)', value: `$${totalSpent.toFixed(2)}`, icon: '💳', sub: 'All succeeded payments' },
-                { label: 'This Month',             value: `$${thisMonth.toFixed(2)}`,  icon: '📅', sub: 'Current billing period' },
-                { label: 'Total Transactions',     value: payments.length,             icon: '📋', sub: 'All payment records' },
-              ].map((s, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-[#EDE6D6] shadow-sm">
-                  <div className="text-2xl mb-2">{s.icon}</div>
-                  <div className="font-['Playfair_Display'] text-2xl font-bold text-[#1B5E37]">{s.value}</div>
-                  <div className="text-xs text-[#888] mt-1">{s.label}</div>
-                  <div className="text-[10px] text-[#bbb] mt-0.5">{s.sub}</div>
+        {loading ? (
+          <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="text-4xl mb-3">🧾</div>
+            <p className="font-semibold text-sm" style={{ color: '#0D3D20' }}>No invoices yet</p>
+            <p className="text-xs mt-1.5" style={{ color: '#9A9A8A' }}>Invoices appear automatically after each payment.</p>
+          </div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: 'rgba(27,94,55,0.05)' }}>
+            {/* Column headers */}
+            <div className="grid grid-cols-6 px-6 py-2.5 text-xs font-semibold uppercase tracking-wide"
+              style={{ color: '#9A9A8A', background: 'rgba(0,0,0,0.01)' }}>
+              <span className="col-span-2">Invoice</span>
+              <span>Child</span>
+              <span>Amount</span>
+              <span>Date</span>
+              <span>Status</span>
+            </div>
+
+            {filtered.map(inv => (
+              <div key={inv.id}
+                className="grid grid-cols-6 items-center px-6 py-4 transition-all"
+                style={{ background: 'transparent' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(27,94,55,0.02)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+                <div className="col-span-2">
+                  <p className="text-sm font-semibold" style={{ color: '#0D3D20' }}>{inv.invoice_number}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#9A9A8A' }}>
+                    {inv.teacher_name} · {inv.description || 'Quran Lesson'}
+                  </p>
                 </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 flex-wrap mb-5">
-          {filters.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`text-sm font-semibold px-4 py-2 rounded-full border transition-colors ${
-                filter === f.key
-                  ? 'bg-[#1B5E37] text-white border-[#1B5E37]'
-                  : 'bg-white text-[#555] border-[#EDE6D6] hover:border-[#1B5E37] hover:text-[#1B5E37]'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Payments table */}
-        <div className="bg-white rounded-2xl border border-[#EDE6D6] shadow-sm overflow-hidden">
-          {loading ? (
-            <div className="p-6 space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16" />)}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="py-20 text-center text-[#999]">
-              <div className="text-4xl mb-3">💳</div>
-              <p className="font-medium text-[#555]">No payments found</p>
-              <p className="text-sm mt-1">
-                {filter === 'all'
-                  ? 'Payment history will appear here once your children have booked lessons.'
-                  : `No ${filter} payments found.`}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop table header */}
-              <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_100px_80px_80px] gap-4 px-6 py-3 bg-[#F5F0E8] text-xs font-semibold text-[#888] uppercase tracking-wide border-b border-[#EDE6D6]">
-                <span>Date</span>
-                <span>Child · Course</span>
-                <span>Teacher</span>
-                <span>Method</span>
-                <span className="text-right">Amount</span>
-                <span className="text-right">Status</span>
+                <div className="text-sm" style={{ color: '#5A7A6A' }}>{inv.student_name}</div>
+                <div className="text-sm font-bold" style={{ color: '#0D3D20' }}>{fmt(inv.total_usd)}</div>
+                <div className="text-xs" style={{ color: '#8A9A8A' }}>{fmtDate(inv.paid_at || inv.created_at)}</div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={inv.status} />
+                </div>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-              <div className="divide-y divide-[#F5F0E8]">
-                {filtered.map(p => (
-                  <div key={p.id} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_100px_80px_80px] gap-2 sm:gap-4 px-6 py-4 hover:bg-[#FAFAF7] transition-colors items-center">
-                    {/* Date */}
-                    <div>
-                      <p className="text-sm text-[#333] font-medium">{formatDate(p.created_at)}</p>
-                      {p.is_trial && (
-                        <span className="text-[10px] bg-[#F0E4B8] text-[#B8952A] font-semibold px-2 py-0.5 rounded-full">Trial</span>
-                      )}
-                    </div>
-                    {/* Child + Course */}
-                    <div>
-                      <p className="text-sm font-semibold text-[#0D3D20]">{p.student_name || '—'}</p>
-                      <p className="text-xs text-[#888]">{p.course_title ?? 'Quran Lesson'}</p>
-                    </div>
-                    {/* Teacher */}
-                    <p className="text-sm text-[#555]">{p.teacher_name || '—'}</p>
-                    {/* Method */}
-                    <p className="text-sm text-[#555]">{methodIcon(p.method)} {p.method}</p>
-                    {/* Amount */}
-                    <p className="text-sm font-bold text-[#1B5E37] sm:text-right">${p.gross_amount_usd.toFixed(2)}</p>
-                    {/* Status */}
-                    <div className="sm:text-right">
-                      <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full ${statusBadge(p.status)}`}>
-                        {p.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer note */}
-              <div className="px-6 py-3 bg-[#F5F0E8] border-t border-[#EDE6D6] text-xs text-[#aaa]">
-                Showing {filtered.length} payment{filtered.length !== 1 ? 's' : ''}
-                {filter !== 'all' ? ` · Filtered: ${filter}` : ''}
-                {' · '}Platform fees are deducted from teacher payouts, not from your payment.
-              </div>
-            </>
-          )}
+      {/* Payment method placeholder */}
+      <div className="mt-6 rounded-2xl p-5"
+        style={{ background: '#fff', border: '1px solid rgba(27,94,55,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-sm" style={{ color: '#0D3D20', fontFamily: "'Playfair Display', serif" }}>
+            Payment Method
+          </h3>
+          <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
+            Coming Soon
+          </span>
         </div>
-
+        <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: '#F5F0E8', border: '1px dashed rgba(27,94,55,0.2)' }}>
+          <span className="text-2xl">💳</span>
+          <div>
+            <p className="text-sm font-medium" style={{ color: '#0D3D20' }}>No payment method saved</p>
+            <p className="text-xs mt-0.5" style={{ color: '#9A9A8A' }}>
+              Stripe card management will be available before launch.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
