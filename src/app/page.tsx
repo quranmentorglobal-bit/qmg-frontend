@@ -648,7 +648,7 @@ export default function LandingPage() {
               { img:'/images/teachers/teacher-1.png', name:'Qari Abdullah',  spec:'Tajweed & Hifz Specialist',  origin:'🇵🇰 Pakistan',     stars:'★★★★★ 4.9' },
               { img:'/images/teachers/teacher-2.png', name:'Sheikh Ibrahim', spec:'Tafseer & Advanced Quran',    origin:'🇸🇦 Saudi Arabia', stars:'★★★★★ 4.8' },
               { img:'/images/teachers/teacher-3.png', name:'Qari Yusuf',     spec:'Noorani Qaida · Kids',        origin:'🇵🇰 Pakistan',     stars:'★★★★★ 5.0' },
-              { img:'/images/teachers/teacher-4.png', name:'Ustadh Bilal',   spec:'Hifz · Memorization',         origin:'🇪🇬 Egypt',        stars:'★★★★★ 4.9' },
+              { img:'/images/teachers/teacher-4.png', name:'Qaria Amna',   spec:'Hifz · Memorization',         origin:'🇪🇬 Egypt',        stars:'★★★★★ 4.9' },
             ].map((t, i) => (
               <div className={`tc reveal d${i + 1}`} key={i}>
                 <div className="tc-img">
