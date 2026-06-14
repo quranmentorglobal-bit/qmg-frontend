@@ -104,6 +104,7 @@ const teacherNav: NavItem[] = [
   { label: 'Bookings',     href: '/platform/teacher/bookings',     icon: Icons.Bookings },
   { label: 'Messages',     href: '/platform/messages',             icon: Icons.Message },
   { label: 'Profile',      href: '/platform/teacher/profile',      icon: Icons.Profile },
+  { label: 'Earnings',      href: '/platform/teacher/earnings',    icon: Icons.Billing },
 ]
 
 const parentNav: NavItem[] = [
