@@ -1,30 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
-// Service role client — bypasses RLS for webhook updates
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-let stripe: any = null
-try {
-  if (process.env.STRIPE_SECRET_KEY) {
-    const Stripe = require('stripe')
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
-  }
-} catch { /* stripe not installed */ }
+// Nothing at module level — all initialization happens inside the handler
+// This prevents build-time crashes when env vars are missing
 
 export async function POST(req: NextRequest) {
-  if (!stripe) {
-    return NextResponse.json({ error: 'Stripe not configured' }, { status: 400 })
+  // ── Lazy-load Stripe ───────────────────────────────────────────────────────
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    // Stripe not configured yet — silently accept and ignore
+    return NextResponse.json({ received: true, mode: 'mock' })
   }
 
+  let stripe: any
+  try {
+    const Stripe = require('stripe')
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  } catch {
+    return NextResponse.json({ error: 'Stripe package not installed. Run: npm install stripe' }, { status: 500 })
+  }
+
+  // ── Lazy-load Supabase admin client ────────────────────────────────────────
+  const { createClient } = require('@supabase/supabase-js')
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // ── Verify Stripe signature ────────────────────────────────────────────────
   const body = await req.text()
   const signature = req.headers.get('stripe-signature')
 
-  if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
+  if (!signature) {
+    return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 })
   }
 
   let event: any
@@ -35,26 +41,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
+  // ── Handle events ──────────────────────────────────────────────────────────
   try {
     switch (event.type) {
 
-      // ── Payment succeeded ─────────────────────────────────────────────────
       case 'checkout.session.completed': {
         const session = event.data.object
         const meta = session.metadata || {}
 
         if (session.payment_status === 'paid') {
-          // Update payment to succeeded — trigger will handle the rest
           await supabaseAdmin
             .from('payments')
-            .update({
-              status: 'succeeded',
-              provider_payment_id: session.payment_intent,
-            })
+            .update({ status: 'succeeded', provider_payment_id: session.payment_intent })
             .eq('booking_id', meta.booking_id)
             .eq('status', 'pending')
 
-          // Update payment attempt
           await supabaseAdmin
             .from('payment_attempts')
             .update({ status: 'succeeded' })
@@ -63,20 +64,16 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // ── Payment intent succeeded (alternative event) ──────────────────────
       case 'payment_intent.succeeded': {
         const pi = event.data.object
-        const meta = pi.metadata || {}
-
         await supabaseAdmin
           .from('payments')
           .update({ status: 'succeeded', provider_payment_id: pi.id })
-          .eq('metadata->stripe_session_id', pi.id)
+          .eq('provider_payment_id', pi.id)
           .eq('status', 'pending')
         break
       }
 
-      // ── Payment failed ────────────────────────────────────────────────────
       case 'payment_intent.payment_failed': {
         const pi = event.data.object
         const failureMsg = pi.last_payment_error?.message || 'Payment failed'
@@ -93,14 +90,13 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // ── Subscription created ──────────────────────────────────────────────
-      case 'customer.subscription.created': {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
         const sub = event.data.object
         await supabaseAdmin
           .from('subscriptions')
           .update({
-            status: 'active',
-            stripe_subscription_id: sub.id,
+            status: sub.status === 'active' ? 'active' : 'past_due',
             current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
             current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
           })
@@ -108,7 +104,6 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // ── Subscription cancelled ────────────────────────────────────────────
       case 'customer.subscription.deleted': {
         const sub = event.data.object
         await supabaseAdmin
@@ -118,23 +113,18 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // ── Charge refunded ───────────────────────────────────────────────────
       case 'charge.refunded': {
         const charge = event.data.object
         await supabaseAdmin
           .from('payments')
           .update({ status: 'refunded' })
           .eq('provider_payment_id', charge.payment_intent)
-
-        await supabaseAdmin
-          .from('refunds')
-          .update({ status: 'completed', processed_at: new Date().toISOString(), provider_refund_id: charge.refunds?.data?.[0]?.id })
-          .eq('payment_id', (await supabaseAdmin.from('payments').select('id').eq('provider_payment_id', charge.payment_intent).single()).data?.id)
         break
       }
 
       default:
-        console.log(`Unhandled webhook event: ${event.type}`)
+        // Ignore unhandled events
+        break
     }
 
     return NextResponse.json({ received: true })
