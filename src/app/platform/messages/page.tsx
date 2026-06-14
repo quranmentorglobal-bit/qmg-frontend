@@ -478,7 +478,11 @@ export default function MessagesPage() {
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {loadingMsgs ? (
                 <div className="space-y-3">
-                  {[1,2,3].map(i => <Skeleton key={i} className="h-12 w-3/4" style={{ marginLeft: i % 2 === 0 ? 'auto' : 0 } as React.CSSProperties} />)}
+                  {[1,2,3].map(i => (
+                    <div key={i} style={{ display: 'flex', justifyContent: i % 2 === 0 ? 'flex-end' : 'flex-start' }}>
+                      <Skeleton className="h-12 w-3/4" />
+                    </div>
+                  ))}
                 </div>
               ) : messages.length === 0 ? (
                 <div className="text-center py-12">
